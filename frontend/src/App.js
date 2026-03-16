@@ -4,30 +4,27 @@ import { Toaster } from 'react-hot-toast';
 import useAuthStore from './store/authStore';
 import './index.css';
 
+import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
 import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import DoctorSearchPage from './pages/doctor/DoctorSearchPage';
 import DoctorMessages from './pages/doctor/DoctorMessages';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminDoctors from './pages/admin/AdminDoctors';
+import PatientMessages from './pages/patient/PatientMessages';
+import PatientDossier from './pages/patient/PatientDossier';
+import PatientAppointments from './pages/patient/PatientAppointments';
+import PatientProfile from './pages/patient/PatientProfile';
+import PatientFavoris from './pages/patient/PatientFavoris';
+
 
 import {
-  PatientDashboard, PatientAppointments, PatientMessages,
-  PatientDossier, PatientProfile,
+  PatientDashboard,
   DoctorAppointments, DoctorPatients, DoctorProfile, DoctorAvailability,
   AdminClinics
 } from './pages/stubs';
 
-const HomePage = () => (
-  <div style={{ textAlign:'center', padding:'80px 20px' }}>
-    <h1 style={{ fontFamily:'Playfair Display,serif', fontSize:'3rem', color:'#0a7c6e' }}>Frey<span style={{color:'#e8734a'}}>a</span></h1>
-    <p style={{ color:'#718096', marginTop:'1rem', marginBottom:'2rem' }}>Plateforme médicale Algérie</p>
-    <div style={{ display:'flex', gap:'1rem', justifyContent:'center' }}>
-      <a href="/login" style={{ padding:'12px 28px', background:'#0a7c6e', color:'white', borderRadius:'50px', textDecoration:'none', fontWeight:600 }}>Se connecter</a>
-    </div>
-  </div>
-);
-const RegisterPage = () => <div style={{ padding:'40px', textAlign:'center' }}><h2>Inscription</h2><a href="/login">Retour connexion</a></div>;
-const DoctorSearchPage = () => <div style={{ padding:'40px', textAlign:'center' }}><h2>Recherche médecins</h2></div>;
 const DoctorProfilePage = () => <div style={{ padding:'40px', textAlign:'center' }}><h2>Profil médecin</h2></div>;
 const BookingPage = () => <div style={{ padding:'40px', textAlign:'center' }}><h2>Réservation</h2></div>;
 
@@ -71,7 +68,8 @@ function App() {
         <Route path="/admin" element={<PrivateRoute roles={['admin']}><AdminDashboard /></PrivateRoute>} />
         <Route path="/admin/doctors" element={<PrivateRoute roles={['admin']}><AdminDoctors /></PrivateRoute>} />
         <Route path="/admin/clinics" element={<PrivateRoute roles={['admin']}><AdminClinics /></PrivateRoute>} />
-
+         <Route path="/patient/favoris" element={<PrivateRoute roles={['patient']}><PatientFavoris /></PrivateRoute>} />
+         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

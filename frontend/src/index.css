@@ -227,10 +227,10 @@ tr:hover td { background: var(--cream); }
 .badge-teal { background: var(--teal-bg); color: var(--teal-dark); }
 
 /* ─── STATUS MAP ──────────────────────────────────────────────────────────── */
-.status-pending { @extend .badge-yellow; }
-.status-confirmed { @extend .badge-green; }
-.status-cancelled { @extend .badge-red; }
-.status-completed { @extend .badge-blue; }
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-confirmed { background: #d1fae5; color: #065f46; }
+.status-cancelled { background: #fee2e2; color: #991b1b; }
+.status-completed { background: #dbeafe; color: #1e40af; }
 
 /* ─── AVATAR ──────────────────────────────────────────────────────────────── */
 .avatar {
