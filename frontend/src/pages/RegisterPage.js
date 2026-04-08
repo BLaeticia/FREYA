@@ -35,43 +35,52 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Empêche le rechargement de la page
-    // 1. Vérification du numéro de téléphone
-    if (!form.phone || form.phone.trim() === "") {
-    toast.error('Veuillez saisir votre numéro de téléphone');
-    return;
-    }
+  e.preventDefault();
 
-     // On prépare l'objet EXACTEMENT comme le Backend le veut
-    const dataToSend = {
-    first_name: form.first_name,
-    last_name: form.last_name,
-    email: form.identifier.includes('@') ? form.identifier : '', // Si c'est un mail
-    phone: form.phone || (form.identifier.includes('@') ? '' : form.identifier), 
+  // 1. On prépare le "carton" (payload) avec les noms exacts attendus par le serveur
+  const dataToSend = {
+    // On envoie les deux au cas où, ou on laisse le backend décider
+    email: form.identifier.includes('@') ? form.identifier : '', 
+    phone: form.phone || (form.identifier.includes('@') ? '' : form.identifier),
+    
+    // ATTENTION : On utilise camelCase ici pour correspondre à ton middleware Prisma
+    firstName: form.first_name, 
+    lastName: form.last_name,
+    
     password: form.password,
-    gender: form.gender, // Assure-hui que c'est 'male'/'female' ou 'M'/'F' selon ton API
-    birth_date: form.birthDate, // <--- VERIFIE CE NOM ICI
-    role: 'patient' // Très important si le backend le demande !
-    };
-
-    // DEBUG : Affiche ceci dans ta console (F12) pour vérifier les valeurs
-    console.log("Données prêtes pour le Backend :", dataToSend);
-
-    setLoading(true);// Affiche le loader sur le bouton
-
-    try {  // Appel à l'API pour créer le compte
-      await authAPI.registerPatient(dataToSend);
-
-      toast.success('Compte créé avec succès :) !');
-      navigate('/login');
-    } catch (err) {
-      // Si le backend renvoie une erreur spécifique, on l'affiche
-      console.error("Erreur Backend:", err.response?.data);
-      toast.error(err.response?.data?.error || 'Erreur lors de l\'inscription');
-    } finally {
-      setLoading(false);// Cache le loader
-    }
+    
+    // Vérifie si ton backend veut birth_date ou birthDate
+    birthDate: form.birthDate, 
+    
+    // Genre : assure-toi que le backend attend 'F'/'M' ou 'female'/'male'
+    gender: form.gender === 'F' ? 'female' : 'male', 
+    
+    role: 'patient'
   };
+
+  // 2. DEBUG : Très important pour toi ce soir
+  // Fais un clic droit sur ta page > Inspecter > Console.
+  // Tu verras exactement ce que tu envoies avant que ça plante.
+  console.log("Tentative d'envoi avec ces données :", dataToSend);
+
+  setLoading(true);
+
+  try {
+    // 3. L'APPEL API (Sans les accolades autour de dataToSend !)
+    await authAPI.registerPatient(dataToSend); 
+    
+    toast.success('Inscription réussie ! Bienvenue sur Freya :)');
+    navigate('/login');
+  } catch (err) {
+    // 4. On récupère le VRAI message d'erreur du moteur (backend)
+    const errorDetail = err.response?.data?.error || err.response?.data?.message;
+    console.error("Le backend a dit :", err.response?.data);
+    
+    toast.error(errorDetail || "Erreur de communication avec le serveur");
+  } finally {
+    setLoading(false);
+  }
+};
 
     
   const getPasswordStrength = (password) => {
