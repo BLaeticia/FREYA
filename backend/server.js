@@ -14,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/doctors',       require('./routes/doctors'));
+app.use('/api/laboratory',    require('./routes/laboratory'));   // ← AJOUTÉ
 app.use('/api/appointments',  appointmentsRouter);
 app.use('/api/messages',      messagesRouter);
 app.use('/api/records',       recordsRouter);
