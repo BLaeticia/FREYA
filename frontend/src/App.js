@@ -18,6 +18,7 @@ import PatientAppointments from './pages/patient/PatientAppointments';
 import PatientProfile   from './pages/patient/PatientProfile';
 import PatientFavoris   from './pages/patient/PatientFavoris';
 import PatientDashboard from './pages/patient/PatientDashboard';
+
 import BookingPage from './pages/patient/BookingPage';
 // ─── Pages ajoutées ────────────────────────────────
 import { DoctorPublicPage } from './pages/DoctorPublicPage';
