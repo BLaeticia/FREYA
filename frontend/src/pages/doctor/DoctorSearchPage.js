@@ -66,7 +66,7 @@ const css = `
 
 /* ── NAV (même que HomePage) ── */
 .sp-nav {
-  background:rgba(13, 163, 151, 0.97); border-bottom:1px solid #E2E8F0;height: 80px;
+  background: #108882; border-bottom:1px solid #E2E8F0;height: 90px;
   position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); padding:0 40px;
 }
 .sp-nav-in { max-width:1200px; margin:0 auto; height:64px; display:flex; align-items:center; gap:24px; }
@@ -103,10 +103,10 @@ const css = `
 .sp-clear:hover { color:#EF4444; }
 
 /* ── BODY ── */
-.sp-body { display:flex; max-width:1300px; margin:0 auto; padding:24px 40px; gap:22px; align-items:start; }
+.sp-body { display:flex; max-width:1400px; margin:0 auto; padding:20px 15px; gap:40px; align-items:start; }
 
 /* ── SIDEBAR FILTRES ── */
-.sp-aside { width:290px; flex-shrink:0; position:sticky; top:84px; max-height:calc(100vh - 100px); overflow-y:auto; scrollbar-width:thin; }
+.sp-aside { width:310px; padding-right:10px; flex-shrink:0; position:sticky; top:84px; max-height:calc(100vh - 100px); overflow-y:auto; scrollbar-width:thin; }
 .sp-aside::-webkit-scrollbar { width:4px; }
 .sp-aside::-webkit-scrollbar-thumb { background: #e1e4e7; border-radius:4px; }
 
@@ -153,8 +153,8 @@ const css = `
 
 /* ── TABS ── */
 .sp-tabs { display:flex; gap:0; margin-bottom:16px; border-bottom:2px solid #E2E8F0; }
-.sp-tab { padding:13px 27px; font-size:13px; font-weight:700; color:#94A3B8; cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
-.sp-tab:hover { color:#0D9488; }
+.sp-tab { padding:13px 27px; font-size:15px; font-weight:700; color: #94A3B8; cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+.sp-tab:hover { color: #0D9488; }
 .sp-tab.on { font-size:13px;
   font-weight:800;
   color:#0D9488;
@@ -162,7 +162,7 @@ const css = `
 
 /* ── DOCTOR CARD (même style que featureCard de HomePage) ── */
 .sp-doc-card {
-  background:#fff; border:1.5px solid #E2E8F0; border-radius:16px;
+  background:#fff; border:1.5px solid #E2E8F0; border-radius:16px;height: 200px;
   padding:20px; margin-bottom:10px; display:flex; gap:16px;
   cursor:pointer; transition:all 0.18s;
   box-shadow:0 1px 3px rgba(0,0,0,0.05);
@@ -173,25 +173,25 @@ const css = `
   width:72px; height:72px; border-radius:50%; flex-shrink:0;
   background:linear-gradient(135deg, #065a50, #0D9488);
   display:flex; align-items:center; justify-content:center;
-  font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.5px;
+  font-size:22px; font-weight:900; color:#fff; letter-spacing:-0.5px;
 }
 .sp-doc-body { flex:1; min-width:0; }
-.sp-doc-name { font-size:17px; font-weight:800; color:#0F172A; margin-bottom:2px; letter-spacing:-0.3px; }
-.sp-doc-spec { font-size:13px; color:#0D9488; font-weight:700; margin-bottom:6px; }
-.sp-doc-meta { display:flex; align-items:center; gap:6px; font-size:12px; color:#64748B; margin-bottom:8px; flex-wrap:wrap; }
-.sp-doc-meta-sep { color:#E2E8F0; }
-.sp-doc-verified { display:inline-flex; align-items:center; gap:3px; font-size:11px; color:#059669; font-weight:700; background:#ECFDF5; padding:2px 7px; border-radius:20px; border:1px solid #A7F3D0; }
+.sp-doc-name { font-size:19px; font-weight:800; color:#0F172A; margin-bottom:2px; letter-spacing:-0.3px; }
+.sp-doc-spec { font-size:15px; color: #0d8076; font-weight:700; margin-bottom:6px; }
+.sp-doc-meta { display:flex; align-items:center; gap:6px; font-size:14px; color:#64748B; margin-bottom:8px; flex-wrap:wrap; }
+.sp-doc-meta-sep { color: #d3dbe6; }
+.sp-doc-verified { display:inline-flex; align-items:center; gap:3px; font-size:13px; color:#059669; font-weight:700; background:#ECFDF5; padding:2px 7px; border-radius:20px; border:1px solid #A7F3D0; }
 .sp-doc-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
 .sp-doc-tag { font-size:11px; padding:3px 9px; background:#F0FDFA; border:1px solid #99F6E4; border-radius:20px; color:#065F46; font-weight:700; }
 .sp-doc-slots { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .sp-doc-slots-lbl { font-size:11px; color:#94A3B8; font-weight:600; }
 .sp-doc-slot {
-  font-size:11px; font-weight:800; color:#0D9488;
-  background:#F0FDFA; border:1.5px solid #99F6E4;
+  font-size:13px; font-weight:800; color:#0D9488;
+  background: #F0FDFA; border:1.5px solid #99F6E4;
   border-radius:7px; padding:4px 10px; cursor:pointer; transition:all 0.12s;
   font-family:inherit;
 }
-.sp-doc-slot:hover { background:#0D9488; color:#fff; border-color:#0D9488; }
+.sp-doc-slot:hover { background: #19c5b7; color:#fff; border-color:#0D9488; }
 
 .sp-doc-right { display:flex; flex-direction:column; align-items:flex-end; gap:10px; min-width:130px; flex-shrink:0; }
 .sp-doc-price { font-size:18px; font-weight:800; color:#0F172A; text-align:right; letter-spacing:-0.5px; }
