@@ -3,17 +3,68 @@ const reviewService = require('../services/reviewService');
 const adminService = require('../services/adminService');
 const notificationService = require('../services/notificationService');
 
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+
 const recordController = {
   getRecords:    async (req, res, next) => { try { res.json(await recordService.getRecords(req.user, req.query.patient_id)); } catch (e) { next(e); } },
   addRecord:     async (req, res, next) => { try { res.status(201).json(await recordService.addRecord(req.user.id, req.body)); } catch (e) { next(e); } },
   getProfile:    async (req, res, next) => { try { res.json(await recordService.getProfile(req.user.id)); } catch (e) { next(e); } },
+
   updateProfile: async (req, res, next) => { 
     try { 
-      // On répond juste "OK" pour débloquer le serveur
-      res.json({ message: "Serveur opérationnel !" }); 
+      const userId = req.user.id;
+      // On récupère tout ce que le front envoie
+      const { phone, bloodGroup, birthDate, gender, height, weight, allergies, chronicDiseases } = req.body;
+      
+      console.log("Tentative de mise à jour Prisma pour l'ID:", userId);
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          phone: phone || undefined,
+          patientProfile: {
+            upsert: {
+              create: {
+                bloodType: bloodGroup || "",
+                dateOfBirth: birthDate ? new Date(birthDate) : null,
+                gender: gender || null,
+                height: height ? parseInt(height) : null,
+                weight: weight ? parseInt(weight) : null,
+                allergies: allergies || "",
+                chronicDiseases: chronicDiseases || ""
+                // NOTE: J'ai enlevé insurance et ssn car ils manquent dans ton schema.prisma
+              },
+              update: {
+                bloodType: bloodGroup || undefined,
+                dateOfBirth: birthDate ? new Date(birthDate) : undefined,
+                gender: gender || undefined,
+                height: height ? parseInt(height) : undefined,
+                weight: weight ? parseInt(weight) : undefined,
+                allergies: allergies || undefined,
+                chronicDiseases: chronicDiseases || undefined
+              }
+            }
+          }
+        },
+        include: { patientProfile: true }
+      });
+
+      console.log("✅ Succès !");
+      // On renvoie un objet simple. React cherche souvent 'success' ou juste le statut 200
+      return res.status(200).json({ 
+        success: true,
+        message: "Profil mis à jour !", 
+        user: updatedUser 
+      });
     } catch (e) { 
-      next(e); 
-    } 
+      console.error("❌ Erreur Prisma détaillée:", e.message);
+      return res.status(500).json({ 
+        success: false,
+        message: "Erreur lors de la mise à jour" 
+      });
+  }
   }
 };
 
