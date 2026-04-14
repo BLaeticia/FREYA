@@ -48,4 +48,5 @@ notificationsRouter.get('/',            auth, notificationController.getAll);
 notificationsRouter.patch('/read-all',  auth, notificationController.markAllRead);
 notificationsRouter.patch('/:id/read', auth, notificationController.markRead);
 
+
 module.exports = { appointmentsRouter, messagesRouter, recordsRouter, reviewsRouter, adminRouter, notificationsRouter };

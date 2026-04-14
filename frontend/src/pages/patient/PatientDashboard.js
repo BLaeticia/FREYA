@@ -6,6 +6,7 @@ import { appointmentsAPI, notificationsAPI } from '../../services/api';
 
 const PatientDashboard = () => {
   const { user, logout } = useAuthStore();
+  
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -14,10 +15,9 @@ const PatientDashboard = () => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [activeNav, setActiveNav] = useState('accueil');
 
-  const firstName = user?.first_name || 'Patient';
-  const lastName = user?.last_name || '';
-  const initials = `${user?.first_name?.[0] || 'P'}${user?.last_name?.[0] || ''}`.toUpperCase();
-
+  const firstName = user?.firstName || user?.first_name || 'Patient';
+  const lastName = user?.lastName || user?.last_name || '';
+  const initials = `${firstName[0] || 'P'}${lastName[0] || ''}`.toUpperCase();
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -77,6 +77,7 @@ const PatientDashboard = () => {
 
   const nextAppt = upcoming[0];
   const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  console.log("Données de l'utilisateur connecté :", user);
 
   return (
     <div style={s.root} onClick={() => { setShowUserMenu(false); setShowNotifs(false); }}>
@@ -186,12 +187,19 @@ const PatientDashboard = () => {
         {/* 2. HERO BANNER */}
         <div style={s.heroBanner} className="fade-in">
           <div style={s.heroLeft}>
-            <div style={s.heroGreeting}>Bonjour, <span style={{ color: '#5EEAD4' }}>{firstName}</span> 👋</div>
+            {/* On affiche le prénom et le nom dynamiquement */}
+            <div style={s.heroGreeting}>
+             Bonjour, <span style={{ color: '#5EEAD4', textTransform: 'capitalize' }}>{firstName} {lastName}</span> 👋
+            </div>
             <div style={s.heroDate}>{today}</div>
             <div style={s.heroStat}>
-              {upcoming.length > 0 ? <><span style={s.heroStatNum}>{upcoming.length}</span> rendez-vous à venir</> : 'Aucun rendez-vous prévu'}
-            </div>
-          </div>
+              {upcoming.length > 0 ? (
+              <>Vous avez <span style={s.heroStatNum}>{upcoming.length}</span> rendez-vous à venir</>
+              ) : (
+               'Aucun rendez-vous prévu pour le moment'
+             )}
+             </div>
+             </div>
 
           {nextAppt ? (
             <div style={s.nextApptCard}>
