@@ -955,9 +955,12 @@ export default function DoctorSearchPage() {
                           color: '#2563eb',
                           disponible: true,
                         }} />
-                        <button className="sp-rdv-btn" onClick={e => { e.stopPropagation(); navigate(`/medecin/${doc.id}`); }}>
-                          Prendre RDV
-                        </button>
+                       <button 
+  className="sp-rdv-btn" 
+  onClick={() => navigate(`/book/${doc.id}`)}
+>
+  Prendre rendez-vous
+</button>
                       </div>
                     </div>
                   );
