@@ -38,7 +38,17 @@ export default function PatientNotifications() {
     const fetchNotifs = async () => {
       try {
         const res = await notificationsAPI.getAll();
-        setNotifications(res.data?.notifications || res.data || []);
+        const data = res.data?.notifications || res.data || [];
+        setNotifications(data);
+
+        // --- AJOUT DU SON ICI ---
+        // On vérifie s'il y a au moins une notification non lue dans la liste récupérée
+        const hasUnread = data.some(n => !n.isRead);
+        if (hasUnread) {
+          playNotify();
+        }
+        // ------------------------
+
       } catch (err) {
         console.error(err);
         toast.error('Erreur lors du chargement des notifications');
@@ -91,7 +101,21 @@ export default function PatientNotifications() {
     if (diff < 1440) return `Il y a ${Math.floor(diff / 60)}h`;
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
+   
 
+  const [isMuted, setIsMuted] = useState(false);
+
+  const playNotify = () => {
+  if (isMuted) return;
+  const audio = new Audio('/assets/sounds/notificationtest.mp3');
+  
+  audio.play()
+    .then(() => console.log("Son joué !"))
+    .catch(err => {
+      // C'est ici que tu verras "NotAllowedError" si tu n'as pas cliqué sur la page
+      console.warn("Le son attend un clic pour être autorisé :", err);
+    });
+};
   return (
     <div style={s.root} onClick={() => setShowUserMenu(false)}>
       <style>{`
@@ -158,11 +182,32 @@ export default function PatientNotifications() {
               {unreadCount > 0 ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
             </p>
           </div>
-          {unreadCount > 0 && (
-            <button style={s.markAllBtn} onClick={handleMarkAllRead}>
-              ✓ Tout marquer comme lu
-            </button>
-          )}
+         
+          <div style={{ display: 'flex', gap: '10px' }}>
+  {/* Bouton pour activer/couper le son */}
+ <button 
+  style={{ ...s.markAllBtn, borderColor: isMuted ? '#94A3B8' : '#0D9488', color: isMuted ? '#94A3B8' : '#0D9488' }} 
+  onClick={(e) => {
+    e.stopPropagation();
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+    
+    // Si on vient de réactiver le son, on fait un test audio
+    if (!newMuteState) {
+       playNotify();
+    }
+  }}
+>
+  {isMuted ? '🔇 Muet' : '🔊 Son activé'}
+</button>
+
+  {/* Bouton Tout marquer comme lu */}
+  {unreadCount > 0 && (
+    <button style={s.markAllBtn} onClick={handleMarkAllRead}>
+      ✓ Tout marquer comme lu
+    </button>
+  )}
+</div>
         </div>
 
         <div style={s.layout}>
