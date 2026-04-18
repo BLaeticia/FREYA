@@ -7,8 +7,12 @@ const jwt = require('jsonwebtoken');
 const prisma = new PrismaClient();
 
 // ─── INSCRIPTION (Register) ───
+<<<<<<< HEAD
 // ─── INSCRIPTION (Register) ───
 router.post('/register', async (req, res) => {
+=======
+router.post(['/register', '/register/patient'], async (req, res) => {
+>>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
   try {
     const { email, phone, firstName, lastName, password, birthDate, gender, role } = req.body;
 
@@ -20,12 +24,23 @@ router.post('/register', async (req, res) => {
       data: {
         email: email || null,
         phone: phone || null,
+<<<<<<< HEAD
         password: hashedPassword,
         firstName: firstName,   // Changé de first_name à firstName
         lastName: lastName,     // Changé de last_name à lastName
        birth_date: new Date(birthDate),  // Changé de birth_date à birthDate
         gender: gender,
         role: role || 'patient'
+=======
+        firstName: firstName,
+        lastName: lastName,
+        password: hashedPassword,
+        //birth_date: birthDate,
+       // gender: gender,
+        role: role || 'patient',
+        isActive: true,       // Optionnel mais propre
+        isVerified: false
+>>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
       }
     });
 
