@@ -22,7 +22,8 @@ export default function LoginPage() {
         phone: !form.identifier.includes('@') ? form.identifier : undefined,
         password: form.password
       });
-
+      
+      console.log('✅ Réponse login:', res.data);
       login(res.data.token, res.data.user);
       toast.success(`Bienvenue ${res.data.user.first_name} !`);
       

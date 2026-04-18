@@ -36,7 +36,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
-
   // 1. On prépare le "carton" (payload) avec les noms exacts attendus par le serveur
   const dataToSend = {
     // On envoie les deux au cas où, ou on laisse le backend décider
@@ -74,7 +73,7 @@ export default function RegisterPage() {
   } catch (err) {
     // 4. On récupère le VRAI message d'erreur du moteur (backend)
     const errorDetail = err.response?.data?.error || err.response?.data?.message;
-    console.error("Le backend a dit :", err.response?.data);
+    console.log("Erreur detaillée :", errorDetail);
     
     toast.error(errorDetail || "Erreur de communication avec le serveur");
   } finally {

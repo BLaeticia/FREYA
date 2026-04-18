@@ -6,6 +6,8 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: !!localStorage.getItem('freya_token'),
 
   login: (token, user) => {
+    console.log('💾 Saving token:', token);
+    console.log('💾 Saving user:', user);
     localStorage.setItem('freya_token', token);
     localStorage.setItem('freya_user', JSON.stringify(user));
     set({ token, user, isAuthenticated: true });
