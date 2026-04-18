@@ -6,83 +6,136 @@ const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
-// ─── INSCRIPTION (Register) ───
-router.post('/register', async (req, res) => {
+const signToken = (id, role) =>
+  jwt.sign({ id, role }, process.env.JWT_SECRET || 'votre_cle_secrete', { expiresIn: '24h' });
+
+// ─── REGISTER PATIENT ─────────────────────────────────────────────────────────
+router.post('/register/patient', async (req, res) => {
   try {
-    const { email, phone, firstName, lastName, password, birthDate, gender, role } = req.body;
+    const { email, phone, firstName, lastName, password, birthDate, gender, wilaya } = req.body;
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email || undefined },
-          { phone: phone || undefined }
-        ].filter(Boolean)
-      }
+    if (!password || !firstName || !lastName)
+      return res.status(400).json({ error: 'Champs obligatoires manquants.' });
+
+    const existing = await prisma.user.findFirst({
+      where: { OR: [email ? { email } : null, phone ? { phone } : null].filter(Boolean) }
     });
+    if (existing) return res.status(409).json({ error: 'Email ou téléphone déjà utilisé.' });
 
-    if (existingUser) {
-      return res.status(400).json({ error: "Cet email ou numéro de téléphone est déjà utilisé." });
-    }
-
-    // Hacher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         email: email || null,
         phone: phone || null,
-        first_name: firstName,
-        last_name: lastName,
-        password: hashedPassword,
-        birth_date: birthDate,
-        gender: gender,
-        role: role || 'patient'
+        firstName,
+        lastName,
+        password: hashed,
+        role: 'patient',
+        isActive: true,
+        isVerified: true,
+        patientProfile: { create: {} }
       }
     });
 
-    res.status(201).json({ message: "Utilisateur créé avec succès", userId: user.id });
+    const token = signToken(user.id, user.role);
+    const { password: _, ...userData } = user;
+    res.status(201).json({ token, user: userData });
   } catch (error) {
-    console.error("Erreur Register:", error);
+    console.error('Erreur Register Patient:', error);
     res.status(500).json({ error: "Erreur lors de l'inscription." });
   }
 });
 
-// ─── CONNEXION (Login) ───
+// ─── REGISTER DOCTOR ──────────────────────────────────────────────────────────
+router.post('/register/doctor', async (req, res) => {
+  try {
+    const { email, phone, firstName, lastName, password, specialite, ordreNumber, wilaya, city, cabinetAddress, consultationPrice, bio } = req.body;
+
+    if (!password || !firstName || !lastName || !specialite || !ordreNumber)
+      return res.status(400).json({ error: 'Champs obligatoires manquants.' });
+
+    const existing = await prisma.user.findFirst({
+      where: { OR: [email ? { email } : null, phone ? { phone } : null].filter(Boolean) }
+    });
+    if (existing) return res.status(409).json({ error: 'Email ou téléphone déjà utilisé.' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email: email || null,
+        phone: phone || null,
+        firstName,
+        lastName,
+        password: hashed,
+        role: 'doctor',
+        isActive: true,
+        doctor: {
+          create: { specialite, ordreNumber, wilaya, city, cabinetAddress, consultationPrice: consultationPrice || 2000, bio }
+        }
+      }
+    });
+
+    const token = signToken(user.id, user.role);
+    const { password: _, ...userData } = user;
+    res.status(201).json({ token, user: userData });
+  } catch (error) {
+    console.error('Erreur Register Doctor:', error);
+    res.status(500).json({ error: "Erreur lors de l'inscription." });
+  }
+});
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
 
     const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email || undefined },
-          { phone: phone || undefined }
-        ].filter(Boolean)
+      where: { OR: [email ? { email } : null, phone ? { phone } : null].filter(Boolean) }
+    });
+
+    if (!user) return res.status(401).json({ error: 'Identifiants incorrects.' });
+    if (!user.isActive) return res.status(403).json({ error: 'Compte désactivé.' });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ error: 'Identifiants incorrects.' });
+
+    if (user.role === 'doctor') {
+      const doctor = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { adminApproved: true } });
+      if (!doctor?.adminApproved) return res.status(403).json({ error: 'Compte en attente de validation.' });
+    }
+
+    const token = signToken(user.id, user.role);
+    const { password: _, ...userData } = user;
+    res.json({ token, user: userData });
+  } catch (error) {
+    console.error('Erreur Login:', error);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+});
+
+// ─── GET ME ───────────────────────────────────────────────────────────────────
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Token manquant.' });
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_cle_secrete');
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true, email: true, role: true, firstName: true, lastName: true,
+        phone: true, wilaya: true, avatar: true, isActive: true, createdAt: true,
+        patientProfile: true,
+        doctor: true,
       }
     });
 
-    if (!user) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
-
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET || 'votre_cle_secrete',
-      { expiresIn: '24h' }
-    );
-
-    // On ne renvoie pas le password au frontend
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ token, user: userWithoutPassword });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json(user);
   } catch (error) {
-    console.error("Erreur Login:", error);
-    res.status(500).json({ error: "Erreur serveur." });
+    res.status(401).json({ error: 'Token invalide.' });
   }
 });
 
