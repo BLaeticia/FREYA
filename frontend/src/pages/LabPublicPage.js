@@ -1,426 +1,504 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import api from '../services/api';
 
-const specialties = [
-  { icon: '🫀', name: 'Cardiologue' },
-  { icon: '🧠', name: 'Neurologue' },
-  { icon: '👶', name: 'Pédiatre' },
-  { icon: '👁️', name: 'Ophtalmologue' },
-  { icon: '🦷', name: 'Dentiste' },
-  { icon: '🩺', name: 'Généraliste' },
-  { icon: '🦴', name: 'Orthopédiste' },
-  { icon: '🧬', name: 'Dermatologue' },
-  { icon: '🤰', name: 'Gynécologue' },
-  { icon: '👂', name: 'ORL' },
+/* ─── Tarifs analyses ─────────────────────────────── */
+const ANALYSES = [
+  { cat:'Hématologie',         ic:'🩸', couleur:'#DC2626', bg:'#FEF2F2', bdr:'#FECACA', items:[
+    { nom:'Numération Formule Sanguine (NFS)',   prix:350,  delai:'2h'    },
+    { nom:'Vitesse de Sédimentation (VS)',       prix:250,  delai:'1h'    },
+    { nom:'Groupe Sanguin + Rhésus',            prix:300,  delai:'1h'    },
+    { nom:'Taux de Prothrombine (TP)',           prix:400,  delai:'3h'    },
+    { nom:'Frottis sanguin',                    prix:450,  delai:'24h'   },
+  ]},
+  { cat:'Biochimie',           ic:'⚗️', couleur:'#2563EB', bg:'#EFF6FF', bdr:'#BFDBFE', items:[
+    { nom:'Glycémie à jeun',                    prix:250,  delai:'1h'    },
+    { nom:'HbA1c (Hémoglobine glyquée)',         prix:700,  delai:'24h'   },
+    { nom:'Bilan lipidique complet',             prix:800,  delai:'3h'    },
+    { nom:'Créatinine + Urée',                  prix:450,  delai:'2h'    },
+    { nom:'Transaminases (ASAT + ALAT)',          prix:500,  delai:'2h'    },
+    { nom:'Bilan hépatique complet',             prix:1100, delai:'3h'    },
+    { nom:'Acide urique',                        prix:300,  delai:'2h'    },
+    { nom:'Calcium + Phosphore',                prix:450,  delai:'2h'    },
+  ]},
+  { cat:'Hormonologie',        ic:'🔬', couleur:'#7C3AED', bg:'#F5F3FF', bdr:'#DDD6FE', items:[
+    { nom:'TSH (Thyroïde)',                     prix:900,  delai:'24h'   },
+    { nom:'T3 + T4 libres',                     prix:1200, delai:'24h'   },
+    { nom:'Bilan thyroïdien complet',           prix:1800, delai:'24h'   },
+    { nom:'FSH + LH',                           prix:1100, delai:'24h'   },
+    { nom:'Estradiol (E2)',                      prix:900,  delai:'24h'   },
+    { nom:'Progestérone',                        prix:900,  delai:'24h'   },
+    { nom:'Prolactine',                          prix:900,  delai:'24h'   },
+    { nom:'Testostérone totale',                prix:900,  delai:'24h'   },
+    { nom:'Cortisol matinal',                   prix:950,  delai:'24h'   },
+  ]},
+  { cat:'Sérologie',           ic:'🧪', couleur:'#059669', bg:'#ECFDF5', bdr:'#A7F3D0', items:[
+    { nom:'Sérologie Hépatite B (AgHBs)',       prix:700,  delai:'24h'   },
+    { nom:'Sérologie Hépatite C',               prix:800,  delai:'24h'   },
+    { nom:'VIH 1+2 (Ag/Ac)',                    prix:800,  delai:'24h'   },
+    { nom:'Toxoplasmose IgG + IgM',             prix:700,  delai:'24h'   },
+    { nom:'CRP (Protéine C Réactive)',           prix:400,  delai:'2h'    },
+    { nom:'Facteur Rhumatoïde',                 prix:600,  delai:'24h'   },
+    { nom:'H. pylori (sérologie)',              prix:750,  delai:'24h'   },
+  ]},
+  { cat:'Parasitologie',       ic:'🦠', couleur:'#D97706', bg:'#FFFBEB', bdr:'#FDE68A', items:[
+    { nom:'Examen parasitologique des selles',  prix:450,  delai:'24h'   },
+    { nom:'Coproculture',                        prix:600,  delai:'48h'   },
+    { nom:'ECBU (Analyse urine)',               prix:500,  delai:'48h'   },
+    { nom:'Antibiogramme',                      prix:400,  delai:'48h'   },
+    { nom:'Prélèvement gorge / nez',            prix:450,  delai:'48h'   },
+  ]},
+  { cat:'Vitamines & Minéraux',ic:'💊', couleur:'#0891B2', bg:'#ECFEFF', bdr:'#A5F3FC', items:[
+    { nom:'Vitamine D (25-OH)',                  prix:1200, delai:'24h'   },
+    { nom:'Vitamine B12',                        prix:1000, delai:'24h'   },
+    { nom:'Folates (B9)',                        prix:950,  delai:'24h'   },
+    { nom:'Bilan martial complet',              prix:950,  delai:'24h'   },
+    { nom:'Magnésium',                           prix:350,  delai:'2h'    },
+    { nom:'Zinc',                                prix:600,  delai:'24h'   },
+  ]},
+  { cat:'Marqueurs tumoraux',  ic:'🔎', couleur:'#9333EA', bg:'#FDF4FF', bdr:'#E9D5FF', items:[
+    { nom:'PSA total (Prostate)',                prix:900,  delai:'24h'   },
+    { nom:'CA 125 (Ovaire)',                    prix:950,  delai:'24h'   },
+    { nom:'CA 19-9 (Pancréas)',                 prix:950,  delai:'24h'   },
+    { nom:'ACE (Colorectal)',                   prix:900,  delai:'24h'   },
+    { nom:'AFP (Foie / Testicule)',              prix:900,  delai:'24h'   },
+  ]},
+  { cat:'Urine & Grossesse',   ic:'💛', couleur:'#B45309', bg:'#FEF3C7', bdr:'#FCD34D', items:[
+    { nom:'Bandelette urinaire',                prix:300,  delai:'30min' },
+    { nom:'Test de grossesse (bHCG urinaire)', prix:350,  delai:'30min' },
+    { nom:'bHCG quantitatif (sanguin)',         prix:700,  delai:'3h'    },
+    { nom:'Microalbuminurie',                   prix:600,  delai:'24h'   },
+  ]},
 ];
 
-const wilayas = ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Tlemcen', 'Sétif', 'Batna', 'Béjaïa', 'Tizi Ouzou'];
-
-const features = [
-  {
-    icon: '📅',
-    title: 'Prenez RDV en ligne',
-    desc: 'Réservez une consultation en quelques clics, 24h/24 et 7j/7, sans attente téléphonique.',
-    color: '#0D9488',
-    bg: '#CCFBF1',
-  },
-  {
-    icon: '💬',
-    title: 'Messagerie sécurisée',
-    desc: 'Échangez directement avec votre médecin et recevez des conseils personnalisés.',
-    color: '#10B981',
-    bg: '#DCFCE7',
-  },
-  {
-    icon: '📄',
-    title: 'Dossier médical',
-    desc: 'Accédez à vos ordonnances, résultats et historique médical en un seul endroit.',
-    color: '#8B5CF6',
-    bg: '#EDE9FE',
-  },
-  {
-    icon: '🔔',
-    title: 'Rappels automatiques',
-    desc: 'Recevez des rappels pour ne jamais manquer un rendez-vous important.',
-    color: '#F59E0B',
-    bg: '#FEF3C7',
-  },
+const HORAIRES = [
+  { jour:'Samedi',    h:'07:30 – 19:00' },
+  { jour:'Dimanche',  h:'07:30 – 19:00' },
+  { jour:'Lundi',     h:'07:30 – 19:00' },
+  { jour:'Mardi',     h:'07:30 – 19:00' },
+  { jour:'Mercredi',  h:'07:30 – 19:00' },
+  { jour:'Jeudi',     h:'07:30 – 19:00' },
+  { jour:'Vendredi',  h:'Fermé', closed:true },
 ];
 
-const stats = [
-  { number: '500+', label: 'Médecins inscrits' },
-  { number: '48', label: 'Wilayas couvertes' },
-  { number: '10K+', label: 'Patients satisfaits' },
-  { number: '24/7', label: 'Disponible' },
+const SERVICES = [
+  ['🏠','Prélèvement à domicile','Sur rendez-vous téléphonique'],
+  ['📱','Résultats en ligne',    'Via Freya ou SMS'],
+  ['🚀','Résultats urgents',     'Service express disponible'],
+  ['📄','Ordonnance numérique',  'Transmission au médecin traitant'],
+  ['🔒','Confidentialité',       'Données médicales sécurisées'],
+  ['♿','Accès handicapés',      'Locaux entièrement accessibles'],
 ];
 
-export default function HomePage() {
-  const [search, setSearch] = useState('');
-  const [wilaya, setWilaya] = useState('');
-  const navigate = useNavigate();
+/* ─── CSS ─────────────────────────────────────────── */
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
 
-  const handleSearch = () => {
-    navigate('/doctors');
-  };
+.lp { font-family:'DM Sans',-apple-system,sans-serif; background:#F8FAFC; min-height:100vh; color:#0F172A; -webkit-font-smoothing:antialiased; }
+.lp * { box-sizing:border-box; margin:0; padding:0; }
+
+/* NAV */
+.lp-nav { background:rgba(255,255,255,0.97); border-bottom:1px solid #E2E8F0; position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); padding:0 40px; }
+.lp-nav-in { max-width:900px; margin:0 auto; height:64px; display:flex; align-items:center; justify-content:space-between; }
+.lp-logo { font-size:36px; font-weight:900; color: #064b47; text-decoration:none; letter-spacing:-0.5px; }
+.lp-logo span { color: #07534d; }
+.lp-back { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:15px; font-weight:600; color: #64748B; border:1.5px solid #E2E8F0; background: #f7fffe; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.lp-back:hover { color:#0D9488; border-color:#0D9488; background:#F0FDFA; }
+
+.lp-hero {
+  background: linear-gradient(160deg,#065a50 0%,#0D9488 45%,#2DD4BF 100%);
+  padding:44px 40px; position:relative; overflow:hidden;
+}
+.lp-hero::before { content:''; position:absolute; top:-80px; right:-80px; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,0.07); }
+.lp-hero::after  { content:''; position:absolute; bottom:-60px; left:25%; width:350px; height:180px; border-radius:50%; background:rgba(255,255,255,0.04); }
+.lp-hero-in { max-width:900px; margin:0 auto; position:relative; z-index:1; display:flex; align-items:center; gap:24px; }
+.lp-hero-ic { width:80px; height:80px; border-radius:20px; background:rgba(255,255,255,0.18); border:2px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:38px; flex-shrink:0; }
+.lp-hero-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:8px; }
+.lp-hero-name { font-size:26px; font-weight:800; color:#fff; letter-spacing:-0.5px; margin-bottom:8px; }
+.lp-hero-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.lp-hero-info { font-size:13px; color:rgba(255,255,255,0.85); font-weight:500; display:flex; align-items:center; gap:5px; }
+.lp-hero-sep { width:4px; height:4px; border-radius:50%; background:rgba(255,255,255,0.4); }
+.lp-hero-tag { background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+
+/* BODY — UNE SEULE COLONNE centrée */
+.lp-body { max-width:1200px; margin:0 auto; padding:30px 40px 50px; }
+
+/* CARDS */
+.lp-card { background: #fff; border:1px solid #E2E8F0; border-radius:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.04); overflow:hidden; }
+.lp-card-head { padding:15px 22px; border-bottom:1px solid #F1F5F9; display:flex; align-items:center; gap:12px; }
+.lp-card-ic { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.lp-card-title { font-size:25px; font-weight:700; color: #0F172A; }
+.lp-card-body { padding:20px 22px; }
+
+/* INFO RAPIDE (contact + stats dans une seule rangée) */
+.lp-quickrow { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.lp-quick-item { background: #eaeef3; border:1px solid #F1F5F9; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+.lp-quick-ic { width:36px; height:36px; border-radius:9px; background: #f6fbfc; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.lp-quick-lbl { font-size:14px; font-weight:700; color: #8e8f92; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:3px; }
+.lp-quick-val { font-size:13px; font-weight:700; color:#0F172A; }
+.lp-quick-val.teal { color:#0D9488; }
+
+/* CONTACT CARD — gradient compact horizontal */
+.lp-contact-band {
+  background:linear-gradient(135deg,#065a50 0%,#0D9488 100%);height: 100px;
+  border-radius:14px; padding:20px 24px; margin-bottom:16px;
+  display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+}
+.lp-contact-band-left { display:flex; align-items:center; gap:20px; flex-wrap:wrap; flex:1; }
+.lp-contact-band-item { display:flex; align-items:center; gap:10px; }
+.lp-contact-band-ic { width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.lp-contact-band-val { font-size:15px; font-weight:700; color: #fff; }
+.lp-contact-band-lbl { font-size:12px; color:rgb(243, 250, 248); margin-top:1px; }
+.lp-call-btn { background:#fff; color:#0D9488; border:none; border-radius:10px; padding:11px 22px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; white-space:nowrap; transition:all 0.15s; flex-shrink:0; }
+.lp-call-btn:hover { background:#F0FDFA; }
+
+/* STATS RAPIDES inline */
+.lp-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.lp-stat { background: #edf5f4; border:1px solid #a4e2df; border-radius:12px; padding:14px; text-align:center; }
+.lp-stat-num { font-size:26px; font-weight:900; color: #0d5e57; letter-spacing:-0.5px; }
+.lp-stat-lbl { font-size:12px; color: #828fa1; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+/* HORAIRES */
+.lp-horaires-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.lp-hour-row { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-bottom:1px solid #F8FAFC; border-right:1px solid #F8FAFC; font-size:13px; }
+.lp-hour-row:nth-child(even) { border-right:none; }
+.lp-hour-row:nth-last-child(-n+2) { border-bottom:none; }
+.lp-hour-day { font-weight:600; color:#334155; }
+.lp-hour-time { color:#0D9488; font-weight:700; }
+.lp-hour-closed { color:#EF4444; font-weight:700; }
+
+/* TABS ANALYSES */
+.lp-tabs { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:18px; }
+.lp-tabs::-webkit-scrollbar { display:none; }
+.lp-tab { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; border:1.5px solid #E2E8F0; background:#fff; color:#64748B; cursor:pointer; white-space:nowrap; transition:all 0.15s; font-family:inherit; }
+.lp-tab.on { background:#0D9488; color:#fff; border-color:#0D9488; }
+.lp-tab:hover:not(.on) { border-color:#0D9488; color:#0D9488; }
+
+/* CAT HEADER */
+.lp-cat-head { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; margin-bottom:14px; }
+.lp-cat-ic { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.lp-cat-name { font-size:14px; font-weight:700; }
+.lp-cat-count { font-size:12px; font-weight:600; opacity:0.65; }
+
+/* TABLE ANALYSES */
+.lp-table-wrap { border-radius:12px; border:1px solid #E2E8F0; overflow:hidden; }
+.lp-table { width:100%; border-collapse:collapse; }
+.lp-table thead { background:#F8FAFC; }
+.lp-table th { padding:10px 16px; font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.8px; text-align:left; border-bottom:1px solid #E2E8F0; }
+.lp-table td { padding:13px 16px; font-size:13px; border-bottom:1px solid #F8FAFC; vertical-align:middle; }
+.lp-table tbody tr:hover td { background:#FAFBFD; }
+.lp-table tbody tr:last-child td { border-bottom:none; }
+.lp-an-name { font-weight:600; color:#0F172A; }
+.lp-an-prix { font-size:17px; font-weight:800; color:#0D9488; }
+.lp-an-da { font-size:11px; color:#94A3B8; margin-top:1px; }
+.lp-an-delai { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#64748B; background:#F1F5F9; padding:3px 9px; border-radius:20px; }
+
+/* SERVICES */
+.lp-services { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.lp-service { display:flex; align-items:flex-start; gap:10px; padding:14px; background:#F8FAFC; border:1px solid #F1F5F9; border-radius:12px; }
+.lp-service-ic { font-size:20px; flex-shrink:0; }
+.lp-service-t { font-size:12px; font-weight:700; color:#0F172A; }
+.lp-service-s { font-size:11px; color:#94A3B8; margin-top:2px; }
+
+/* CERTIF */
+.lp-certif { display:flex; align-items:center; gap:14px; padding:14px 18px; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:12px; margin-bottom:0; }
+.lp-certif-t { font-size:13px; font-weight:700; color:#065F46; }
+.lp-certif-s { font-size:12px; color:#0D9488; margin-top:1px; }
+
+/* SPINNER / 404 */
+.lp-spin { width:32px; height:32px; border:3px solid #E2E8F0; border-top-color:#0D9488; border-radius:50%; animation:lp-r 0.7s linear infinite; margin:80px auto; }
+@keyframes lp-r { to { transform:rotate(360deg); } }
+.lp-404 { text-align:center; padding:80px 20px; color:#64748B; }
+
+@media(max-width:700px) {
+  .lp-body { padding:16px 20px 40px; }
+  .lp-nav  { padding:0 20px; }
+  .lp-hero { padding:32px 20px; }
+  .lp-hero-name { font-size:20px; }
+  .lp-quickrow { grid-template-columns:1fr 1fr; }
+  .lp-stats-row { grid-template-columns:1fr 1fr; }
+  .lp-horaires-grid { grid-template-columns:1fr; }
+  .lp-services { grid-template-columns:1fr 1fr; }
+  .lp-contact-band { flex-direction:column; align-items:flex-start; }
+}
+`;
+
+export default function LabPublicPage() {
+  const { id }    = useParams();
+  const navigate  = useNavigate();
+  const [lab,     setLab]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tab,     setTab]     = useState(0);
+
+  useEffect(() => {
+    api.get(`/laboratory/${id}`)
+      .then(r => setLab(r.data))
+      .catch(() => setLab(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <div className="lp"><style>{css}</style><div className="lp-spin"/></div>;
+
+  if (!lab) return (
+    <div className="lp"><style>{css}</style>
+      <div className="lp-404">
+        <div style={{fontSize:48,marginBottom:16}}>🔬</div>
+        <h2 style={{fontSize:18,fontWeight:700,marginBottom:8}}>Laboratoire introuvable</h2>
+        <p>Ce laboratoire n'existe pas ou a été supprimé.</p>
+      </div>
+    </div>
+  );
+
+  const cat = ANALYSES[tab];
 
   return (
-    <div style={s.root}>
-      {/* NAVBAR */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <div style={s.logo}>
-            Frey<span style={{ color: '#0D9488' }}>a</span>
-          </div>
-          <div style={s.navLinks}>
-            <a href="#features" style={s.navLink}>Fonctionnalités</a>
-            <a href="#specialties" style={s.navLink}>Spécialités</a>
-            <a href="#about" style={s.navLink}>À propos</a>
-            <a href="#contact" style={s.navLink}>Contact</a>
-          </div>
-          <div style={s.navActions}>
-            <Link to="/login" style={s.loginBtn}>Se connecter</Link>
-            <Link to="/register" style={s.registerBtn}>S'inscrire</Link>
-          </div>
+    <div className="lp">
+      <style>{css}</style>
+
+      {/* NAV */}
+      <nav className="lp-nav">
+        <div className="lp-nav-in">
+          <Link to="/" className="lp-logo">Freya<span>.</span></Link>
+          <button className="lp-back" onClick={() => navigate(-1)}>← Retour aux résultats</button>
         </div>
       </nav>
 
       {/* HERO */}
-      <section style={s.hero}>
-        <div style={s.heroShape1} />
-        <div style={s.heroShape2} />
-        <div style={s.heroContent}>
-          <div style={s.heroBadge}>🇩🇿 La plateforme médicale algérienne</div>
-          <h1 style={s.heroTitle}>
-            Vivez en<br />
-            <span style={s.heroAccent}>meilleure santé</span>
-          </h1>
-          <p style={s.heroSubtitle}>
-            Trouvez un médecin, prenez rendez-vous en ligne et gérez<br />
-            votre santé — partout en Algérie.
-          </p>
-
-          {/* Search Bar */}
-          <div style={s.searchBar}>
-            <div style={s.searchField}>
-              <span style={s.searchIcon}>🔍</span>
-              <input
-                style={s.searchInput}
-                placeholder="Nom, spécialité, établissement..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+      <div className="lp-hero">
+        <div className="lp-hero-in">
+          <div className="lp-hero-ic">🔬</div>
+          <div>
+            <div className="lp-hero-badge">🏥 Laboratoire d'analyses médicales</div>
+            <div className="lp-hero-name">{lab.name}</div>
+            <div className="lp-hero-row">
+              <div className="lp-hero-info">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {lab.address}
+              </div>
+              <div className="lp-hero-sep"/>
+              <div className="lp-hero-info">{lab.city ? `${lab.city}, ` : ''}{lab.wilaya}</div>
+              {lab.phone && <><div className="lp-hero-sep"/><div className="lp-hero-info">📞 {lab.phone}</div></>}
+              <div className="lp-hero-tag">✓ Agréé</div>
+              <div className="lp-hero-tag">🕐 Sam – Jeu</div>
             </div>
-            <div style={s.searchDivider} />
-            <div style={s.searchField}>
-              <span style={s.searchIcon}>📍</span>
-              <select
-                style={s.searchSelect}
-                value={wilaya}
-                onChange={e => setWilaya(e.target.value)}
-              >
-                <option value="">Wilaya ?</option>
-                {wilayas.map(w => <option key={w} value={w}>{w}</option>)}
-              </select>
-            </div>
-            <button style={s.searchBtn} onClick={handleSearch}>
-              Rechercher →
-            </button>
-          </div>
-
-          {/* Quick searches */}
-          <div style={s.quickSearch}>
-            <span style={s.quickLabel}>Recherches fréquentes :</span>
-            {['Généraliste', 'Cardiologue', 'Pédiatre', 'Dentiste'].map(sp => (
-              <button key={sp} style={s.quickBtn} onClick={handleSearch}>{sp}</button>
-            ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* STATS */}
-      <section style={s.statsSection}>
-        <div style={s.statsGrid}>
-          {stats.map((stat, i) => (
-            <div key={i} style={s.statItem}>
-              <div style={s.statNumber}>{stat.number}</div>
-              <div style={s.statLabel}>{stat.label}</div>
+      {/* ── CORPS — UNE SEULE COLONNE ── */}
+      <div className="lp-body">
+
+        {/* 1. BAND CONTACT — bande horizontale teal */}
+        <div className="lp-contact-band">
+          <div className="lp-contact-band-left">
+            {lab.phone && (
+              <div className="lp-contact-band-item">
+                <div className="lp-contact-band-ic">📞</div>
+                <div>
+                  <div className="lp-contact-band-val">{lab.phone}</div>
+                  <div className="lp-contact-band-lbl">Téléphone</div>
+                </div>
+              </div>
+            )}
+            {lab.email && (
+              <div className="lp-contact-band-item">
+                <div className="lp-contact-band-ic">✉️</div>
+                <div>
+                  <div className="lp-contact-band-val">{lab.email}</div>
+                  <div className="lp-contact-band-lbl">Email</div>
+                </div>
+              </div>
+            )}
+            <div className="lp-contact-band-item">
+              <div className="lp-contact-band-ic">📍</div>
+              <div>
+                <div className="lp-contact-band-val">{lab.city || lab.wilaya}</div>
+                <div className="lp-contact-band-lbl">Localisation</div>
+              </div>
+            </div>
+            <div className="lp-contact-band-item">
+              <div className="lp-contact-band-ic">🕐</div>
+              <div>
+                <div className="lp-contact-band-val">Sam – Jeu : 07h30 – 19h</div>
+                <div className="lp-contact-band-lbl">Horaires</div>
+              </div>
+            </div>
+          </div>
+          {lab.phone && (
+            <button className="lp-call-btn" onClick={() => window.open(`tel:${lab.phone}`)}>
+              📞 Appeler maintenant
+            </button>
+          )}
+        </div>
+
+        {/* 2. STATS */}
+        <div className="lp-stats-row">
+          {[['60+','Analyses'],['8','Catégories'],['2h','Délai min.'],['6j/7','Ouverture']].map(([n,l]) => (
+            <div key={l} className="lp-stat">
+              <div className="lp-stat-num">{n}</div>
+              <div className="lp-stat-lbl">{l}</div>
             </div>
           ))}
         </div>
-      </section>
 
-      {/* SPECIALTIES */}
-      <section id="specialties" style={s.section}>
-        <div style={s.sectionInner}>
-          <div style={s.sectionHeader}>
-            <h2 style={s.sectionTitle}>Consultez par spécialité</h2>
-            <p style={s.sectionSub}>Trouvez le spécialiste qu'il vous faut parmi nos médecins qualifiés</p>
+        {/* 3. INFOS PRATIQUES */}
+        <div className="lp-card">
+          <div className="lp-card-head">
+            <div className="lp-card-ic" style={{background:'#F0FDFA'}}>📋</div>
+            <span className="lp-card-title">Informations pratiques</span>
           </div>
-          <div style={s.specialtiesGrid}>
-            {specialties.map((sp, i) => (
-              <button key={i} style={s.specialtyCard} onClick={handleSearch}>
-                <span style={s.specialtyIcon}>{sp.icon}</span>
-                <span style={s.specialtyName}>{sp.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" style={{ ...s.section, backgroundColor: '#F8FAFC' }}>
-        <div style={s.sectionInner}>
-          <div style={s.sectionHeader}>
-            <h2 style={s.sectionTitle}>Votre compagnon de santé au quotidien</h2>
-            <p style={s.sectionSub}>Tout ce dont vous avez besoin pour gérer votre santé en un seul endroit</p>
-          </div>
-          <div style={s.featuresGrid}>
-            {features.map((f, i) => (
-              <div key={i} style={s.featureCard}>
-                <div style={{ ...s.featureIconBox, backgroundColor: f.bg }}>
-                  <span style={s.featureEmoji}>{f.icon}</span>
+          <div className="lp-card-body">
+            <div className="lp-quickrow">
+              <div className="lp-quick-item">
+                <div className="lp-quick-ic">📍</div>
+                <div>
+                  <div className="lp-quick-lbl">Adresse</div>
+                  <div className="lp-quick-val">{lab.address}</div>
                 </div>
-                <h3 style={{ ...s.featureTitle, color: f.color }}>{f.title}</h3>
-                <p style={s.featureDesc}>{f.desc}</p>
               </div>
-            ))}
+              <div className="lp-quick-item">
+                <div className="lp-quick-ic">🗺️</div>
+                <div>
+                  <div className="lp-quick-lbl">Wilaya</div>
+                  <div className="lp-quick-val">{lab.wilaya}{lab.city ? ` — ${lab.city}` : ''}</div>
+                </div>
+              </div>
+              {lab.phone && (
+                <div className="lp-quick-item">
+                  <div className="lp-quick-ic">📞</div>
+                  <div>
+                    <div className="lp-quick-lbl">Téléphone</div>
+                    <div className="lp-quick-val teal">{lab.phone}</div>
+                  </div>
+                </div>
+              )}
+              {lab.email && (
+                <div className="lp-quick-item">
+                  <div className="lp-quick-ic">✉️</div>
+                  <div>
+                    <div className="lp-quick-lbl">Email</div>
+                    <div className="lp-quick-val teal" style={{fontSize:12}}>{lab.email}</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* CTA */}
-      <section style={s.ctaSection}>
-        <div style={s.ctaShape} />
-        <div style={s.ctaContent}>
-          <h2 style={s.ctaTitle}>Prêt à prendre soin de votre santé ?</h2>
-          <p style={s.ctaSub}>Rejoignez des milliers de patients et médecins qui font confiance à Freya</p>
-          <div style={s.ctaButtons}>
-            <Link to="/register" style={s.ctaBtnPrimary}>Créer un compte gratuit →</Link>
-            <Link to="/login" style={s.ctaBtnSecondary}>Se connecter</Link>
+        {/* 4. HORAIRES */}
+        <div className="lp-card">
+          <div className="lp-card-head">
+            <div className="lp-card-ic" style={{background:'#FFFBEB'}}>🕐</div>
+            <span className="lp-card-title">Horaires d'ouverture</span>
+          </div>
+          <div className="lp-card-body">
+            {lab.openingHours && (
+              <div style={{background:'#F0FDFA',border:'1px solid #99F6E4',borderRadius:10,padding:'9px 14px',marginBottom:14,fontSize:13,color:'#065F46',fontWeight:700}}>
+                🕐 {lab.openingHours}
+              </div>
+            )}
+            <div className="lp-horaires-grid">
+              {HORAIRES.map(h => (
+                <div key={h.jour} className="lp-hour-row">
+                  <span className="lp-hour-day">{h.jour}</span>
+                  <span className={h.closed ? 'lp-hour-closed' : 'lp-hour-time'}>{h.h}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:12,padding:'9px 14px',background:'#FEF3C7',border:'1px solid #FDE68A',borderRadius:10,fontSize:12,color:'#92400E',fontWeight:600}}>
+              ⚠️ Résultats disponibles par SMS et sur votre espace Freya dans les délais indiqués.
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* FOOTER */}
-      <footer style={s.footer}>
-        <div style={s.footerInner}>
-          <div style={s.footerLogo}>
-            Frey<span style={{ color: '#0D9488' }}>a</span>
-            <p style={s.footerTagline}>Plateforme médicale Algérie</p>
+        {/* 5. ANALYSES & TARIFS */}
+        <div className="lp-card">
+          <div className="lp-card-head">
+            <div className="lp-card-ic" style={{background:'#F5F3FF'}}>💰</div>
+            <span className="lp-card-title">Analyses & Tarifs</span>
           </div>
-          <div style={s.footerLinks}>
-            <div style={s.footerCol}>
-              <div style={s.footerColTitle}>Plateforme</div>
-              <a style={s.footerLink} href="#features">Fonctionnalités</a>
-              <a style={s.footerLink} href="#specialties">Spécialités</a>
-              <Link style={s.footerLink} to="/login">Connexion</Link>
-              <Link style={s.footerLink} to="/register">Inscription</Link>
+          <div className="lp-card-body">
+            <p style={{fontSize:13,color:'#64748B',marginBottom:16,lineHeight:1.6}}>
+              Tarifs indicatifs en dinars algériens (DA). Contactez le laboratoire pour confirmation.
+            </p>
+
+            <div className="lp-tabs">
+              {ANALYSES.map((c, i) => (
+                <button key={i} className={`lp-tab${tab === i ? ' on' : ''}`} onClick={() => setTab(i)}>
+                  {c.ic} {c.cat}
+                </button>
+              ))}
             </div>
-            <div style={s.footerCol}>
-              <div style={s.footerColTitle}>Médecins</div>
-              <a style={s.footerLink} href="#">Rejoindre Freya</a>
-              <a style={s.footerLink} href="#">Gestion agenda</a>
-              <a style={s.footerLink} href="#">Téléconsultation</a>
+
+            <div className="lp-cat-head" style={{background: cat.bg, border: `1px solid ${cat.bdr}`}}>
+              <div className="lp-cat-ic" style={{background: cat.bg}}>{cat.ic}</div>
+              <div>
+                <div className="lp-cat-name" style={{color: cat.couleur}}>{cat.cat}</div>
+                <div className="lp-cat-count" style={{color: cat.couleur}}>{cat.items.length} analyses disponibles</div>
+              </div>
             </div>
-            <div style={s.footerCol}>
-              <div style={s.footerColTitle}>Support</div>
-              <a style={s.footerLink} href="#">Centre d'aide</a>
-              <a style={s.footerLink} href="#">Nous contacter</a>
-              <a style={s.footerLink} href="#">CGU</a>
+
+            <div className="lp-table-wrap">
+              <table className="lp-table">
+                <thead>
+                  <tr>
+                    <th>Analyse</th>
+                    <th style={{width:110}}>Délai résultat</th>
+                    <th style={{width:130,textAlign:'right'}}>Tarif</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cat.items.map((a, i) => (
+                    <tr key={i}>
+                      <td><span className="lp-an-name">{a.nom}</span></td>
+                      <td><span className="lp-an-delai">⏱ {a.delai}</span></td>
+                      <td style={{textAlign:'right'}}>
+                        <div className="lp-an-prix">{a.prix.toLocaleString('fr-DZ')}</div>
+                        <div className="lp-an-da">DA</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{marginTop:12,fontSize:12,color:'#94A3B8',textAlign:'center'}}>
+              * Tarifs indicatifs — Contactez le laboratoire pour confirmation
             </div>
           </div>
         </div>
-        <div style={s.footerBottom}>
-          <span>© 2026 Freya — Plateforme médicale Algérie. Tous droits réservés.</span>
+
+        {/* 6. SERVICES */}
+        <div className="lp-card">
+          <div className="lp-card-head">
+            <div className="lp-card-ic" style={{background:'#EFF6FF'}}>✅</div>
+            <span className="lp-card-title">Services proposés</span>
+          </div>
+          <div className="lp-card-body">
+            <div className="lp-services">
+              {SERVICES.map(([ic, t, s]) => (
+                <div key={t} className="lp-service">
+                  <span className="lp-service-ic">{ic}</span>
+                  <div>
+                    <div className="lp-service-t">{t}</div>
+                    <div className="lp-service-s">{s}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </footer>
+
+        {/* 7. CERTIFICATION */}
+        <div className="lp-certif">
+          <span style={{fontSize:28}}>✅</span>
+          <div>
+            <div className="lp-certif-t">Laboratoire agréé — Ministère de la Santé</div>
+            <div className="lp-certif-s">Toutes les analyses sont réalisées selon les normes algériennes et internationales.</div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
-
-const s = {
-  root: { fontFamily: "'DM Sans', 'Segoe UI', sans-serif", backgroundColor: '#fff' },
-
-  // NAVBAR
-  navbar: {
-    position: 'sticky', top: 0, zIndex: 100,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    backdropFilter: 'blur(10px)',
-    borderBottom: '1px solid #E2E8F0',
-    padding: '0 40px',
-  },
-  navInner: {
-    maxWidth: '1200px', margin: '0 auto',
-    display: 'flex', alignItems: 'center', height: '64px', gap: '32px',
-  },
-  logo: { fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px', flexShrink: 0 },
-  navLinks: { display: 'flex', gap: '28px', flex: 1 },
-  navLink: { fontSize: '14px', color: '#64748B', textDecoration: 'none', fontWeight: '500' },
-  navActions: { display: 'flex', gap: '10px', flexShrink: 0 },
-  loginBtn: {
-    padding: '8px 18px', borderRadius: '10px', fontSize: '14px',
-    fontWeight: '600', color: '#0D9488', textDecoration: 'none',
-    border: '1.5px solid #0D9488',
-  },
-  registerBtn: {
-    padding: '8px 18px', borderRadius: '10px', fontSize: '14px',
-    fontWeight: '600', color: '#fff', textDecoration: 'none',
-    backgroundColor: '#0D9488',
-  },
-
-  // HERO
-  hero: {
-    background: 'linear-gradient(160deg, #065a50 0%, #0D9488 40%, #2DD4BF 100%)',
-    padding: '80px 40px 100px',
-    position: 'relative', overflow: 'hidden',
-  },
-  heroShape1: {
-    position: 'absolute', top: '-60px', right: '-60px',
-    width: '400px', height: '400px', borderRadius: '50%',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  heroShape2: {
-    position: 'absolute', bottom: '-80px', left: '20%',
-    width: '500px', height: '300px', borderRadius: '50%',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  heroContent: { maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 },
-  heroBadge: {
-    display: 'inline-block', backgroundColor: 'rgba(255,255,255,0.2)',
-    color: '#fff', padding: '6px 16px', borderRadius: '20px',
-    fontSize: '13px', fontWeight: '600', marginBottom: '20px',
-    backdropFilter: 'blur(10px)',
-  },
-  heroTitle: {
-    fontSize: '56px', fontWeight: '800', color: '#fff',
-    letterSpacing: '-2px', lineHeight: '1.1', marginBottom: '20px',
-  },
-  heroAccent: { color: '#FCD34D' },
-  heroSubtitle: {
-    fontSize: '18px', color: 'rgba(255,255,255,0.85)',
-    lineHeight: '1.6', marginBottom: '36px',
-  },
-
-  // SEARCH
-  searchBar: {
-    backgroundColor: '#fff', borderRadius: '16px',
-    display: 'flex', alignItems: 'center',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-    overflow: 'hidden', maxWidth: '700px',
-  },
-  searchField: { display: 'flex', alignItems: 'center', flex: 1, padding: '0 16px' },
-  searchIcon: { fontSize: '18px', marginRight: '10px', flexShrink: 0 },
-  searchInput: {
-    border: 'none', outline: 'none', fontSize: '15px',
-    color: '#0F172A', width: '100%', padding: '18px 0', backgroundColor: 'transparent',
-  },
-  searchSelect: {
-    border: 'none', outline: 'none', fontSize: '15px',
-    color: '#0F172A', width: '100%', padding: '18px 0', backgroundColor: 'transparent', cursor: 'pointer',
-  },
-  searchDivider: { width: '1px', height: '40px', backgroundColor: '#E2E8F0', flexShrink: 0 },
-  searchBtn: {
-    backgroundColor: '#0F172A', color: '#fff', border: 'none',
-    padding: '18px 28px', fontSize: '15px', fontWeight: '700',
-    cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
-  },
-  quickSearch: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '16px', flexWrap: 'wrap' },
-  quickLabel: { fontSize: '13px', color: 'rgba(255,255,255,0.7)' },
-  quickBtn: {
-    backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff',
-    border: '1px solid rgba(255,255,255,0.3)', borderRadius: '20px',
-    padding: '5px 14px', fontSize: '13px', cursor: 'pointer', fontWeight: '500',
-  },
-
-  // STATS
-  statsSection: {
-    backgroundColor: '#0F172A', padding: '32px 40px',
-  },
-  statsGrid: {
-    maxWidth: '1200px', margin: '0 auto',
-    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px',
-  },
-  statItem: { textAlign: 'center', padding: '16px' },
-  statNumber: { fontSize: '36px', fontWeight: '800', color: '#2DD4BF', letterSpacing: '-1px' },
-  statLabel: { fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' },
-
-  // SECTIONS
-  section: { padding: '80px 40px' },
-  sectionInner: { maxWidth: '1200px', margin: '0 auto' },
-  sectionHeader: { textAlign: 'center', marginBottom: '48px' },
-  sectionTitle: { fontSize: '36px', fontWeight: '800', color: '#0F172A', letterSpacing: '-1px', marginBottom: '12px' },
-  sectionSub: { fontSize: '16px', color: '#64748B' },
-
-  // SPECIALTIES
-  specialtiesGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '14px',
-  },
-  specialtyCard: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-    padding: '20px 16px', borderRadius: '16px', border: '1.5px solid #E2E8F0',
-    cursor: 'pointer', backgroundColor: '#fff', transition: 'all 0.2s',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-  },
-  specialtyIcon: { fontSize: '32px' },
-  specialtyName: { fontSize: '13px', fontWeight: '600', color: '#0F172A' },
-
-  // FEATURES
-  featuresGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px',
-  },
-  featureCard: {
-    backgroundColor: '#fff', borderRadius: '16px', padding: '28px 24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0',
-  },
-  featureIconBox: {
-    width: '56px', height: '56px', borderRadius: '14px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    marginBottom: '16px',
-  },
-  featureEmoji: { fontSize: '26px' },
-  featureTitle: { fontSize: '16px', fontWeight: '700', marginBottom: '10px' },
-  featureDesc: { fontSize: '14px', color: '#64748B', lineHeight: '1.6' },
-
-  // CTA
-  ctaSection: {
-    background: 'linear-gradient(135deg, #0D9488 0%, #065a50 100%)',
-    padding: '80px 40px', textAlign: 'center', position: 'relative', overflow: 'hidden',
-  },
-  ctaShape: {
-    position: 'absolute', top: '-80px', right: '-80px',
-    width: '300px', height: '300px', borderRadius: '50%',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  ctaContent: { position: 'relative', zIndex: 1 },
-  ctaTitle: { fontSize: '36px', fontWeight: '800', color: '#fff', letterSpacing: '-1px', marginBottom: '12px' },
-  ctaSub: { fontSize: '16px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px' },
-  ctaButtons: { display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' },
-  ctaBtnPrimary: {
-    backgroundColor: '#fff', color: '#0D9488', padding: '14px 28px',
-    borderRadius: '12px', fontSize: '15px', fontWeight: '700', textDecoration: 'none',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-  },
-  ctaBtnSecondary: {
-    backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff',
-    padding: '14px 28px', borderRadius: '12px', fontSize: '15px',
-    fontWeight: '600', textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.4)',
-  },
-
-  // FOOTER
-  footer: { backgroundColor: '#0F172A', padding: '60px 40px 0' },
-  footerInner: {
-    maxWidth: '1200px', margin: '0 auto',
-    display: 'flex', gap: '60px', paddingBottom: '40px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  footerLogo: { fontSize: '28px', fontWeight: '800', color: '#fff', letterSpacing: '-0.5px' },
-  footerTagline: { fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '6px', fontWeight: '400' },
-  footerLinks: { display: 'flex', gap: '60px', flex: 1, justifyContent: 'flex-end' },
-  footerCol: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  footerColTitle: { fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' },
-  footerLink: { fontSize: '14px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' },
-  footerBottom: {
-    maxWidth: '1200px', margin: '0 auto',
-    padding: '20px 0', fontSize: '13px', color: 'rgba(255,255,255,0.3)',
-  },
-};
