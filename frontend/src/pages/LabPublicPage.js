@@ -252,6 +252,7 @@ export default function LabPublicPage() {
   const cat = ANALYSES[tab];
 
   return (
+<<<<<<< HEAD
     <div className="lp">
       <style>{css}</style>
 
@@ -260,6 +261,25 @@ export default function LabPublicPage() {
         <div className="lp-nav-in">
           <Link to="/" className="lp-logo">Freya<span>.</span></Link>
           <button className="lp-back" onClick={() => navigate(-1)}>← Retour aux résultats</button>
+=======
+    <div style={s.root}>
+      {/* NAVBAR */}
+      <nav style={s.navbar}>
+        <div style={s.navInner}>
+          <div style={s.logo}>
+            Frey<span style={{ color: '#0D9488' }}>a</span>
+          </div>
+          <div style={s.navLinks}>
+            <a href="#features" style={s.navLink}>Fonctionnalités</a>
+            <a href="#specialties" style={s.navLink}>Spécialités</a>
+            <a href="#about" style={s.navLink}>À propos</a>
+            <a href="#contact" style={s.navLink}>Contact</a>
+          </div>
+          <div style={s.navActions}>
+            <Link to="/login" style={s.loginBtn}>Se connecter</Link>
+            <Link to="/register" style={s.registerBtn}>S''inscrire</Link>
+          </div>
+>>>>>>> 849b888 (Sauvegarde locale des corrections PFE)
         </div>
       </nav>
 
@@ -341,11 +361,20 @@ export default function LabPublicPage() {
           ))}
         </div>
 
+<<<<<<< HEAD
         {/* 3. INFOS PRATIQUES */}
         <div className="lp-card">
           <div className="lp-card-head">
             <div className="lp-card-ic" style={{background:'#F0FDFA'}}>📋</div>
             <span className="lp-card-title">Informations pratiques</span>
+=======
+      {/* SPECIALTIES */}
+      <section id="specialties" style={s.section}>
+        <div style={s.sectionInner}>
+          <div style={s.sectionHeader}>
+            <h2 style={s.sectionTitle}>Consultez par spécialité</h2>
+            <p style={s.sectionSub}>Trouvez le spécialiste qu''il vous faut parmi nos médecins qualifiés</p>
+>>>>>>> 849b888 (Sauvegarde locale des corrections PFE)
           </div>
           <div className="lp-card-body">
             <div className="lp-quickrow">
@@ -437,6 +466,7 @@ export default function LabPublicPage() {
                 <div className="lp-cat-count" style={{color: cat.couleur}}>{cat.items.length} analyses disponibles</div>
               </div>
             </div>
+<<<<<<< HEAD
 
             <div className="lp-table-wrap">
               <table className="lp-table">
@@ -464,6 +494,13 @@ export default function LabPublicPage() {
 
             <div style={{marginTop:12,fontSize:12,color:'#94A3B8',textAlign:'center'}}>
               * Tarifs indicatifs — Contactez le laboratoire pour confirmation
+=======
+            <div style={s.footerCol}>
+              <div style={s.footerColTitle}>Support</div>
+              <a style={s.footerLink} href="#">Centre d''aide</a>
+              <a style={s.footerLink} href="#">Nous contacter</a>
+              <a style={s.footerLink} href="#">CGU</a>
+>>>>>>> 849b888 (Sauvegarde locale des corrections PFE)
             </div>
           </div>
         </div>

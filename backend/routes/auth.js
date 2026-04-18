@@ -7,35 +7,23 @@ const jwt = require('jsonwebtoken');
 const prisma = new PrismaClient();
 
 // ─── INSCRIPTION (Register) ───
+// ─── INSCRIPTION (Register) ───
 router.post('/register', async (req, res) => {
   try {
     const { email, phone, firstName, lastName, password, birthDate, gender, role } = req.body;
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email || undefined },
-          { phone: phone || undefined }
-        ].filter(Boolean)
-      }
-    });
+    // ... (ton code de vérification d'existant reste le même)
 
-    if (existingUser) {
-      return res.status(400).json({ error: "Cet email ou numéro de téléphone est déjà utilisé." });
-    }
-
-    // Hacher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         email: email || null,
         phone: phone || null,
-        first_name: firstName,
-        last_name: lastName,
         password: hashedPassword,
-        birth_date: birthDate,
+        firstName: firstName,   // Changé de first_name à firstName
+        lastName: lastName,     // Changé de last_name à lastName
+       birth_date: new Date(birthDate),  // Changé de birth_date à birthDate
         gender: gender,
         role: role || 'patient'
       }

@@ -15,7 +15,7 @@ API.interceptors.request.use((config) => {
 // Handle 401 - redirect to login
 API.interceptors.response.use(
   (res) => res,
-  (err) => {
+  (err) => {   
     if (err.response?.status === 401) {
       localStorage.removeItem('freya_token');
       localStorage.removeItem('freya_user');
@@ -28,8 +28,9 @@ API.interceptors.response.use(
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
   loginUser: (data) => API.post('/auth/login', data),
-  registerPatient: (data) => API.post('/auth/register/patient', data),
-  registerDoctor: (data) => API.post('/auth/register/doctor', data),
+ registerPatient: (data) => API.post('/auth/register', { ...data, role: 'patient' }),
+  registerDoctor: (data) => API.post('/auth/register', { ...data, role: 'doctor' }),
+
   getMe: () => API.get('/auth/me'),
   updateProfile: (data) => API.put('/auth/profile', data),
   changePassword: (data) => API.put('/auth/password', data),
