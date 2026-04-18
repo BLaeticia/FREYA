@@ -6,12 +6,11 @@ const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
-// ─── INSCRIPTION (Register) ───
+// ─── INSCRIPTION ───
 router.post(['/register', '/register/patient'], async (req, res) => {
   try {
-    const { email, phone, firstName, lastName, password, birthDate, gender, role } = req.body;
+    const { email, phone, firstName, lastName, password, role } = req.body;
 
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -25,21 +24,27 @@ router.post(['/register', '/register/patient'], async (req, res) => {
       return res.status(400).json({ error: "Cet email ou numéro de téléphone est déjà utilisé." });
     }
 
-    // Hacher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         email: email || null,
         phone: phone || null,
-        firstName: firstName,
-        lastName: lastName,
+        firstName,
+        lastName,
         password: hashedPassword,
-        //birth_date: birthDate,
-       // gender: gender,
         role: role || 'patient',
-        isActive: true,       // Optionnel mais propre
+        isActive: true,
         isVerified: false
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type: 'registration',
+        title: 'Bienvenue sur Freya ! 🎉',
+        body: `Bonjour ${firstName}, votre compte patient est créé avec succès.`,
       }
     });
 
@@ -50,7 +55,7 @@ router.post(['/register', '/register/patient'], async (req, res) => {
   }
 });
 
-// ─── CONNEXION (Login) ───
+// ─── CONNEXION ───
 router.post('/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
@@ -64,14 +69,10 @@ router.post('/login', async (req, res) => {
       }
     });
 
-    if (!user) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
+    if (!user) return res.status(401).json({ error: "Identifiants incorrects." });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
+    if (!validPassword) return res.status(401).json({ error: "Identifiants incorrects." });
 
     const token = jwt.sign(
       { id: user.id, role: user.role },
@@ -79,7 +80,6 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // On ne renvoie pas le password au frontend
     const { password: _, ...userWithoutPassword } = user;
     res.json({ token, user: userWithoutPassword });
   } catch (error) {

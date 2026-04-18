@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 export default function PatientDossier() {
-  const { user, logout, setUser } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('info');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -78,20 +78,19 @@ export default function PatientDossier() {
   };
 
   const handleSave = async () => {
-    setIsEditing(true);
     try {
       //on envoie les donnees au serveur dur la route existante
       await api.put('/records/profile', tempData);
       // Si le serveur répond OK, on met à jour le store global
-      setUser({ ...user, ...tempData });
+      updateUser({ ...user, ...tempData });
       
+      localStorage.setItem(storageKey, JSON.stringify(tempData))
+      setEditData({ ...tempData });
       setIsEditing(false);
-      toast.success('Informations mises à jour !');
+      toast.success('Informations mises à jour  :) !');
     } catch (error){
       console.error("Erreur API:", error);
       toast.error("Le serveur n'a pas pu enregistrer les modifications"); 
-    } finally {
-      setIsEditing(false);
     }
   };
 
