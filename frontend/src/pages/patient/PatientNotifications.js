@@ -21,6 +21,8 @@ export default function PatientNotifications() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [pendingSound, setPendingSound] = useState(false);
 
   const firstName = user?.firstName || user?.first_name || 'Patient';
   const lastName = user?.lastName || user?.last_name || '';
@@ -34,21 +36,52 @@ export default function PatientNotifications() {
     { id: 'dossier',  label: 'Dossier médical',    path: '/patient/dossier' },
   ];
 
+  const playNotify = (muted = isMuted) => {
+    if (muted) return;
+    const audio = new Audio('/assets/sounds/notificationtest.mp3');
+    audio.play()
+      .then(() => {
+        console.log("Son joué !");
+        setPendingSound(false);
+      })
+      .catch(err => {
+        console.warn("Autoplay bloqué, son mis en attente :", err);
+        setPendingSound(true);
+      });
+  };
+
+  // Joue le son dès que l'utilisateur interagit avec la page (si son en attente)
+  useEffect(() => {
+    if (!pendingSound || isMuted) return;
+    const handleFirstInteraction = () => {
+      const audio = new Audio('/assets/sounds/notificationtest.mp3');
+      audio.play()
+        .then(() => {
+          console.log("Son joué après interaction !");
+          setPendingSound(false);
+        })
+        .catch(err => console.warn("Toujours bloqué :", err));
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+    window.addEventListener('click', handleFirstInteraction);
+    window.addEventListener('keydown', handleFirstInteraction);
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, [pendingSound, isMuted]);
+
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
         const res = await notificationsAPI.getAll();
         const data = res.data?.notifications || res.data || [];
         setNotifications(data);
-
-        // --- AJOUT DU SON ICI ---
-        // On vérifie s'il y a au moins une notification non lue dans la liste récupérée
         const hasUnread = data.some(n => !n.isRead);
         if (hasUnread) {
           playNotify();
         }
-        // ------------------------
-
       } catch (err) {
         console.error(err);
         toast.error('Erreur lors du chargement des notifications');
@@ -101,21 +134,7 @@ export default function PatientNotifications() {
     if (diff < 1440) return `Il y a ${Math.floor(diff / 60)}h`;
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
-   
 
-  const [isMuted, setIsMuted] = useState(false);
-
-  const playNotify = () => {
-  if (isMuted) return;
-  const audio = new Audio('/assets/sounds/notificationtest.mp3');
-  
-  audio.play()
-    .then(() => console.log("Son joué !"))
-    .catch(err => {
-      // C'est ici que tu verras "NotAllowedError" si tu n'as pas cliqué sur la page
-      console.warn("Le son attend un clic pour être autorisé :", err);
-    });
-};
   return (
     <div style={s.root} onClick={() => setShowUserMenu(false)}>
       <style>{`
@@ -182,32 +201,28 @@ export default function PatientNotifications() {
               {unreadCount > 0 ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
             </p>
           </div>
-         
-          <div style={{ display: 'flex', gap: '10px' }}>
-  {/* Bouton pour activer/couper le son */}
- <button 
-  style={{ ...s.markAllBtn, borderColor: isMuted ? '#94A3B8' : '#0D9488', color: isMuted ? '#94A3B8' : '#0D9488' }} 
-  onClick={(e) => {
-    e.stopPropagation();
-    const newMuteState = !isMuted;
-    setIsMuted(newMuteState);
-    
-    // Si on vient de réactiver le son, on fait un test audio
-    if (!newMuteState) {
-       playNotify();
-    }
-  }}
->
-  {isMuted ? '🔇 Muet' : '🔊 Son activé'}
-</button>
 
-  {/* Bouton Tout marquer comme lu */}
-  {unreadCount > 0 && (
-    <button style={s.markAllBtn} onClick={handleMarkAllRead}>
-      ✓ Tout marquer comme lu
-    </button>
-  )}
-</div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              style={{ ...s.markAllBtn, borderColor: isMuted ? '#94A3B8' : '#0D9488', color: isMuted ? '#94A3B8' : '#0D9488' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const newMuteState = !isMuted;
+                setIsMuted(newMuteState);
+                if (!newMuteState) {
+                  playNotify(false);
+                }
+              }}
+            >
+              {isMuted ? '🔇 Muet' : '🔊 Son activé'}
+            </button>
+
+            {unreadCount > 0 && (
+              <button style={s.markAllBtn} onClick={handleMarkAllRead}>
+                ✓ Tout marquer comme lu
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={s.layout}>
