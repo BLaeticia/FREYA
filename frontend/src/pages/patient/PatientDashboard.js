@@ -26,7 +26,10 @@ const PatientDashboard = () => {
           notificationsAPI.getAll(),
         ]);
         if (apptRes.status === 'fulfilled') setAppointments(apptRes.value.data?.appointments || []);
-        if (notifRes.status === 'fulfilled') setNotifications(notifRes.value.data?.notifications || []);
+        if (notifRes.status === 'fulfilled') {
+        console.log('📬 Notifications reçues:', notifRes.value.data);
+        setNotifications(notifRes.value.data?.notifications || notifRes.value.data || []);
+         }
       } catch (err) {
         console.error(err);
       } finally {
@@ -38,8 +41,7 @@ const PatientDashboard = () => {
 
   const upcoming = appointments.filter(a => ['pending', 'confirmed'].includes(a.status));
   const past = appointments.filter(a => ['completed', 'cancelled'].includes(a.status));
-  const unreadNotifs = notifications.filter(n => !n.is_read).length;
-
+  const unreadNotifs = notifications.filter(n => !n.isRead).length;
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -119,26 +121,79 @@ const PatientDashboard = () => {
                 </svg>
                 {unreadNotifs > 0 && <span style={s.notifBadge}>{unreadNotifs}</span>}
               </button>
+              
               {showNotifs && (
-                <div style={s.notifDropdown} className="fade-in">
-                  <div style={s.notifHeader}>
-                    <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>Notifications</span>
-                  </div>
-                  {notifications.length === 0 ? (
-                    <div style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>Aucune notification</div>
-                  ) : (
-                    notifications.slice(0, 5).map((n, i) => (
-                      <div key={i} style={s.notifItem(n.is_read)}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: n.is_read ? '#CBD5E1' : '#0D9488', flexShrink: 0, marginTop: '4px' }} />
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: n.is_read ? '400' : '600' }}>{n.title || n.message}</div>
-                          <div style={{ fontSize: '11px', color: '#94A3B8' }}>{new Date(n.created_at).toLocaleDateString('fr-FR')}</div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+  <div style={s.notifDropdown} className="fade-in">
+    
+    {/* HEADER */}
+    <div style={{ padding: '14px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>Notifications</span>
+        {unreadNotifs > 0 && (
+          <span style={{ background: '#0D9488', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px' }}>
+            {unreadNotifs}
+          </span>
+        )}
+      </div>
+      {unreadNotifs > 0 && (
+        <button
+          style={{ fontSize: '11px', color: '#0D9488', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+          onClick={async () => {
+            await notificationsAPI.markAllRead();
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+          }}
+        >
+          Tout marquer lu
+        </button>
+      )}
+    </div>
+
+    {/* LISTE */}
+    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+      {notifications.length === 0 ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
+          Aucune notification
+        </div>
+      ) : (
+        notifications.slice(0, 5).map((n, i) => {
+          const typeConfig = {
+            registration:       { icon: '🎉', bg: '#CCFBF1', color: '#0D9488' },
+            new_appointment:    { icon: '📅', bg: '#DBEAFE', color: '#2563EB' },
+            appointment_update: { icon: '📅', bg: '#FEF3C7', color: '#D97706' },
+            new_message:        { icon: '💬', bg: '#F3E8FF', color: '#7C3AED' },
+            new_record:         { icon: '📄', bg: '#ECFDF5', color: '#059669' },
+            reminder:           { icon: '⏰', bg: '#FEF3C7', color: '#D97706' },
+            admin_decision:     { icon: '⚙️', bg: '#F1F5F9', color: '#475569' },
+          };
+          const cfg = typeConfig[n.type] || { icon: '🔔', bg: '#F1F5F9', color: '#475569' };
+          return (
+            <div key={i} style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '12px', alignItems: 'flex-start', backgroundColor: n.isRead ? '#fff' : '#F0FDFA' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>
+                {cfg.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: n.isRead ? '400' : '600', color: '#0F172A', marginBottom: '2px' }}>{n.title}</div>
+                {n.body && <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.4' }}>{n.body}</div>}
+                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>{new Date(n.createdAt).toLocaleDateString('fr-FR')}</div>
+              </div>
+              {!n.isRead && (
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0D9488', flexShrink: 0, marginTop: '4px' }} />
               )}
+            </div>
+          );
+        })
+      )}
+    </div>
+
+    {/* FOOTER */}
+   <div 
+  style={{ padding: '10px 16px', borderTop: '1px solid #F1F5F9', textAlign: 'center', cursor: 'pointer' }}
+  onClick={() => { setShowNotifs(false); navigate('/patient/notifications'); }}
+>
+  <span style={{ fontSize: '12px', color: '#0D9488', fontWeight: '600' }}>Voir toutes les notifications →</span>
+</div>
+  </div>
+)}
             </div>
             <button className="pill-btn" style={s.ctaBtn} onClick={() => navigate('/doctors')}>Prendre RDV</button>
             <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
@@ -343,7 +398,7 @@ const s = {
   
   securityBadge: { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', borderRadius: '14px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', marginTop: '10px' },
   
-  notifDropdown: { position: 'absolute', top: '45px', right: 0, width: '280px', backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 10px 15px rgba(0,0,0,0.1)', overflow: 'hidden', zIndex: 200 },
+ notifDropdown: { position: 'absolute', top: '45px', right: 0, width: '340px', backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '14px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', overflow: 'hidden', zIndex: 200 },
   notifItem: (read) => ({ padding: '12px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '10px', backgroundColor: read ? '#fff' : '#F0FDFA' }),
   userDropdown: { position: 'absolute', top: '50px', right: 0, width: '220px', backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 10px 15px rgba(0,0,0,0.1)', zIndex: 200 },
   dropdownTop: { padding: '15px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '10px', alignItems: 'center' },

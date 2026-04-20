@@ -6,24 +6,45 @@ const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
+<<<<<<< HEAD
 // ─── INSCRIPTION (Register) ───
 <<<<<<< HEAD
 // ─── INSCRIPTION (Register) ───
 router.post('/register', async (req, res) => {
 =======
+=======
+// ─── INSCRIPTION ───
+>>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
 router.post(['/register', '/register/patient'], async (req, res) => {
 >>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
   try {
-    const { email, phone, firstName, lastName, password, birthDate, gender, role } = req.body;
+    const { email, phone, firstName, lastName, password, role } = req.body;
 
+<<<<<<< HEAD
     // ... (ton code de vérification d'existant reste le même)
 
+=======
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email || undefined },
+          { phone: phone || undefined }
+        ].filter(Boolean)
+      }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Cet email ou numéro de téléphone est déjà utilisé." });
+    }
+
+>>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         email: email || null,
         phone: phone || null,
+<<<<<<< HEAD
 <<<<<<< HEAD
         password: hashedPassword,
         firstName: firstName,   // Changé de first_name à firstName
@@ -34,13 +55,24 @@ router.post(['/register', '/register/patient'], async (req, res) => {
 =======
         firstName: firstName,
         lastName: lastName,
+=======
+        firstName,
+        lastName,
+>>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
         password: hashedPassword,
-        //birth_date: birthDate,
-       // gender: gender,
         role: role || 'patient',
-        isActive: true,       // Optionnel mais propre
+        isActive: true,
         isVerified: false
 >>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type: 'registration',
+        title: 'Bienvenue sur Freya ! 🎉',
+        body: `Bonjour ${firstName}, votre compte patient est créé avec succès.`,
       }
     });
 
@@ -51,7 +83,7 @@ router.post(['/register', '/register/patient'], async (req, res) => {
   }
 });
 
-// ─── CONNEXION (Login) ───
+// ─── CONNEXION ───
 router.post('/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
@@ -65,14 +97,10 @@ router.post('/login', async (req, res) => {
       }
     });
 
-    if (!user) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
+    if (!user) return res.status(401).json({ error: "Identifiants incorrects." });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: "Identifiants incorrects." });
-    }
+    if (!validPassword) return res.status(401).json({ error: "Identifiants incorrects." });
 
     const token = jwt.sign(
       { id: user.id, role: user.role },
@@ -80,7 +108,6 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // On ne renvoie pas le password au frontend
     const { password: _, ...userWithoutPassword } = user;
     res.json({ token, user: userWithoutPassword });
   } catch (error) {

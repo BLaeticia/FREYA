@@ -18,10 +18,15 @@ import PatientAppointments from './pages/patient/PatientAppointments';
 import PatientProfile   from './pages/patient/PatientProfile';
 import PatientFavoris   from './pages/patient/PatientFavoris';
 import PatientDashboard from './pages/patient/PatientDashboard';
+
 import BookingPage from './pages/patient/BookingPage';
 // ─── Pages ajoutées ────────────────────────────────
 import { DoctorPublicPage } from './pages/DoctorPublicPage';
 import LabPublicPage        from './pages/LabPublicPage';
+
+import PatientNotifications from './pages/patient/PatientNotifications';
+
+
 
 import {
   DoctorAppointments, DoctorPatients, DoctorProfile, DoctorAvailability,
@@ -64,7 +69,8 @@ function App() {
         <Route path="/patient/profile"      element={<PrivateRoute roles={['patient']}><PatientProfile /></PrivateRoute>} />
         <Route path="/patient/favoris"      element={<PrivateRoute roles={['patient']}><PatientFavoris /></PrivateRoute>} />
         <Route path="/book/:id" element={<PrivateRoute roles={['patient']}><BookingPage /></PrivateRoute>} />
-
+        <Route path="/patient/notifications" element={<PrivateRoute roles={['patient']}><PatientNotifications /></PrivateRoute>} />
+        
         {/* ── Médecin ─────────────────────────────────── */}
         <Route path="/doctor"              element={<PrivateRoute roles={['doctor']}><DoctorDashboard /></PrivateRoute>} />
         <Route path="/doctor/appointments" element={<PrivateRoute roles={['doctor']}><DoctorAppointments /></PrivateRoute>} />

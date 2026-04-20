@@ -1,8 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
+import useAuthStore from '../../store/authStore';
+import toast from 'react-hot-toast';
 
-/* ─── Données ─────────────────────────────────────── */
+/* ─── Coordonnées GPS des wilayas algériennes ─── */
+const WILAYA_COORDS = {
+  'Adrar':{lat:27.87,lng:0.28},'Chlef':{lat:36.16,lng:1.33},'Laghouat':{lat:33.8,lng:2.86},
+  'Oum El Bouaghi':{lat:35.87,lng:7.11},'Batna':{lat:35.56,lng:6.17},'Béjaïa':{lat:36.75,lng:5.06},
+  'Biskra':{lat:34.85,lng:5.73},'Béchar':{lat:31.62,lng:-2.22},'Blida':{lat:36.47,lng:2.83},
+  'Bouira':{lat:36.37,lng:3.9},'Tamanrasset':{lat:22.78,lng:5.52},'Tébessa':{lat:35.4,lng:8.12},
+  'Tlemcen':{lat:34.88,lng:-1.32},'Tiaret':{lat:35.37,lng:1.32},'Tizi Ouzou':{lat:36.72,lng:4.05},
+  'Alger':{lat:36.74,lng:3.06},'Djelfa':{lat:34.67,lng:3.26},'Jijel':{lat:36.82,lng:5.77},
+  'Sétif':{lat:36.19,lng:5.41},'Saïda':{lat:34.83,lng:0.15},'Skikda':{lat:36.88,lng:6.9},
+  'Sidi Bel Abbès':{lat:35.19,lng:-0.63},'Annaba':{lat:36.9,lng:7.77},'Guelma':{lat:36.46,lng:7.43},
+  'Constantine':{lat:36.36,lng:6.61},'Médéa':{lat:36.26,lng:2.75},'Mostaganem':{lat:35.93,lng:0.09},
+  "M'Sila":{lat:35.7,lng:4.54},'Mascara':{lat:35.4,lng:0.14},'Ouargla':{lat:31.95,lng:5.32},
+  'Oran':{lat:35.7,lng:-0.63},'El Bayadh':{lat:33.68,lng:1.01},'Illizi':{lat:26.48,lng:8.48},
+  'Bordj Bou Arréridj':{lat:36.07,lng:4.76},'Boumerdès':{lat:36.76,lng:3.47},'El Tarf':{lat:36.77,lng:8.31},
+  'Tindouf':{lat:27.67,lng:-8.14},'Tissemsilt':{lat:35.6,lng:1.81},'El Oued':{lat:33.37,lng:6.86},
+  'Khenchela':{lat:35.43,lng:7.14},'Souk Ahras':{lat:36.28,lng:7.94},'Tipaza':{lat:36.59,lng:2.45},
+  'Mila':{lat:36.45,lng:6.26},'Aïn Defla':{lat:36.26,lng:1.97},'Naâma':{lat:33.27,lng:-0.31},
+  'Aïn Témouchent':{lat:35.3,lng:-1.14},'Ghardaïa':{lat:32.49,lng:3.67},'Relizane':{lat:35.74,lng:0.56},
+};
+
 const WILAYAS = [
   {code:'01',nom:'Adrar'},{code:'02',nom:'Chlef'},{code:'03',nom:'Laghouat'},
   {code:'04',nom:'Oum El Bouaghi'},{code:'05',nom:'Batna'},{code:'06',nom:'Béjaïa'},
@@ -20,10 +41,6 @@ const WILAYAS = [
   {code:'40',nom:'Khenchela'},{code:'41',nom:'Souk Ahras'},{code:'42',nom:'Tipaza'},
   {code:'43',nom:'Mila'},{code:'44',nom:'Aïn Defla'},{code:'45',nom:'Naâma'},
   {code:'46',nom:'Aïn Témouchent'},{code:'47',nom:'Ghardaïa'},{code:'48',nom:'Relizane'},
-  {code:'49',nom:'Timimoun'},{code:'50',nom:'Bordj Badji Mokhtar'},{code:'51',nom:'Béni Abbès'},
-  {code:'52',nom:'Ouled Djellal'},{code:'53',nom:'In Salah'},{code:'54',nom:'In Guezzam'},
-  {code:'55',nom:'Touggourt'},{code:'56',nom:'Djanet'},{code:'57',nom:"El M'Ghair"},
-  {code:'58',nom:'El Meniaa'},
 ];
 
 const SPECS_GROUPED = {
@@ -42,11 +59,11 @@ const SPECS_GROUPED = {
 const ALL_SPECS = Object.values(SPECS_GROUPED).flat();
 
 const PRICE_RANGES = [
-  {label:'Tous les tarifs',     min:0,    max:99999},
-  {label:'Moins de 1 500 DA',  min:0,    max:1499 },
-  {label:'1 500 – 2 500 DA',   min:1500, max:2500 },
-  {label:'2 500 – 4 000 DA',   min:2501, max:4000 },
-  {label:'Plus de 4 000 DA',   min:4001, max:99999},
+  {label:'Tous les tarifs', min:0, max:99999},
+  {label:'Moins de 1 500 DA', min:0, max:1499},
+  {label:'1 500 – 2 500 DA', min:1500, max:2500},
+  {label:'2 500 – 4 000 DA', min:2501, max:4000},
+  {label:'Plus de 4 000 DA', min:4001, max:99999},
 ];
 
 const SORT_OPTIONS = [
@@ -57,236 +74,262 @@ const SORT_OPTIONS = [
   {value:'name',      label:'Alphabétique'},
 ];
 
-/* ─── CSS ─────────────────────────────────────────── */
+const LANGUAGES = ['Arabe','Français','Tamazight','Anglais','Espagnol'];
+
+/* ─── CSS ─────────────────────────────────────── */
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.sp { font-family:'DM Sans',-apple-system,sans-serif; background:#f0fafa; min-height:100vh; color:#0F172A; }
 
-.sp { font-family:'DM Sans',-apple-system,sans-serif; background: #f5fdfd; min-height:100vh; color:#0F172A; -webkit-font-smoothing:antialiased; }
-.sp * { box-sizing:border-box; margin:0; padding:0; }
+.sp-nav { background:#fff; height:72px; display:flex; align-items:center; border-bottom:1px solid #E2E8F0; padding:0 40px; position:sticky; top:0; z-index:200; }
+.sp-nav-in { max-width:1400px; margin:0 auto; height:100%; display:flex; align-items:center; width:100%; }
+.sp-logo { font-size:24px; font-weight:800; color:#0D9488; text-decoration:none; margin-right:32px; flex-shrink:0; letter-spacing:-0.5px; }
+.sp-nav-links { display:flex; gap:4px; align-items:center; }
+.sp-nav-link { text-decoration:none; font-size:13px; font-weight:600; color:#64748B; padding:7px 12px; border-radius:8px; transition:all .15s; }
+.sp-nav-link:hover { color:#0D9488; background:#F0FDFA; }
+.sp-nav-link.active { color:#0D9488; background:#F0FDFA; }
+.sp-nav-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+.sp-nav-btn-rdv { background:#0D9488; color:#fff; padding:9px 18px; border-radius:9px; font-weight:700; text-decoration:none; font-size:13px; }
+.sp-user-pill { display:flex; align-items:center; gap:10px; border:1.5px solid #E2E8F0; padding:5px 12px; border-radius:12px; cursor:pointer; transition:all .15s; }
+.sp-user-pill:hover { border-color:#0D9488; background:#F0FDFA; }
+.sp-user-av { width:32px; height:32px; background:#0D9488; color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; flex-shrink:0; }
+/* HERO SEARCH */
+.sp-hero { background:linear-gradient(135deg,#0D9488 0%,#065e52 100%); padding:32px 32px 48px; position:relative; overflow:hidden; }
+.sp-hero::before { content:''; position:absolute; top:-60px; right:-80px; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,0.05); }
+.sp-hero::after  { content:''; position:absolute; bottom:-40px; left:10%; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.04); }
+.sp-hero-in { max-width:1280px; margin:0 auto; position:relative; z-index:1; }
+.sp-hero-title { font-size:22px; font-weight:700; color:#fff; margin-bottom:18px; opacity:0.95; }
+.sp-hero-title span { color:#99F6E4; }
 
-/* ── NAV (même que HomePage) ── */
-.sp-nav {
-  background: #108882; border-bottom:1px solid #E2E8F0;height: 90px;
-  position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); padding:0 40px;
-}
-.sp-nav-in { max-width:1200px; margin:0 auto; height:64px; display:flex; align-items:center; gap:24px; }
-.sp-logo { font-size:35px; font-weight:800; color: #fcffff; text-decoration:none; letter-spacing:1px; flex-shrink:0; }
-.sp-logo em { font-style: normal; color: #f5fffe; }
+.sp-searchbar { display:flex; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.15); height:56px; }
+.sp-sb-field { flex:1; display:flex; align-items:center; padding:0 18px; gap:10px; border-right:1px solid #F1F5F9; min-width:0; }
+.sp-sb-field svg { color:#94A3B8; flex-shrink:0; }
+.sp-sb-field input { border:none; outline:none; font-size:15px; font-family:inherit; color:#0F172A; width:100%; font-weight:500; }
+.sp-sb-field input::placeholder { color:#CBD5E1; font-weight:400; }
+.sp-sb-loc { display:flex; align-items:center; padding:0 16px; gap:8px; min-width:180px; border-right:1px solid #F1F5F9; cursor:pointer; }
+.sp-sb-loc svg { color:#0D9488; flex-shrink:0; }
+.sp-sb-loc select { border:none; outline:none; font-size:14px; font-family:inherit; color:#0F172A; background:transparent; cursor:pointer; appearance:none; font-weight:500; max-width:140px; }
+.sp-sb-btn { background:#0D9488; color:#fff; border:none; padding:0 28px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.15s; white-space:nowrap; letter-spacing:0.3px; }
+.sp-sb-btn:hover { background:#065a50; }
 
-/* search bar */
-.sp-sbar { flex:1; display:flex; max-width:600px; background:#fff; border-radius:12px; overflow:hidden; height:42px; border:1.5px solid #E2E8F0; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
-.sp-sbar:focus-within { border-color:#0D9488; box-shadow:0 0 0 3px rgba(13,148,136,0.1); }
-.sp-sbar-f { flex:1; display:flex; align-items:center; padding:0 14px; gap:8px; border-right:1px solid #E2E8F0; }
-.sp-sbar-f svg { color:#94A3B8; flex-shrink:0; }
-.sp-sbar-f input { border:none; outline:none; font-size:13px; font-family:inherit; color:#0F172A; width:100%; }
-.sp-sbar-f input::placeholder { color:#CBD5E1; }
-.sp-sbar-l { display:flex; align-items:center; padding:0 12px; gap:7px; min-width:140px; border-right:1px solid #E2E8F0; }
-.sp-sbar-l svg { color:#94A3B8; flex-shrink:0; }
-.sp-sbar-l select { border:none; outline:none; font-size:13px; font-family:inherit; color:#0F172A; background:transparent; appearance:none; max-width:115px; cursor:pointer; }
-.sp-sbar-btn { background:#0D9488; color:#fff; border:none; padding:0 18px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.15s; }
-.sp-sbar-btn:hover { background:#065a50; }
+/* FILTER BAR */
+.sp-fbar { background:#fff; border-bottom:1px solid #E2E8F0; padding:0 32px; box-shadow:0 1px 3px rgba(0,0,0,0.04); position:sticky; top:68px; z-index:150; }
+.sp-fbar-in { max-width:1280px; margin:0 auto; display:flex; align-items:center; gap:8px; height:52px; }
+.sp-fbtn { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:20px; border:1.5px solid #E2E8F0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; position:relative; }
+.sp-fbtn:hover { border-color:#0D9488; color:#0D9488; background:#F0FDFA; }
+.sp-fbtn.active { border-color:#0D9488; color:#0D9488; background:#F0FDFA; }
+.sp-fbtn-badge { background:#0D9488; color:#fff; font-size:10px; font-weight:800; padding:1px 6px; border-radius:20px; min-width:18px; text-align:center; }
+.sp-fbtn-soon { font-size:9px; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; padding:1px 5px; border-radius:10px; font-weight:700; }
+.sp-fbar-sep { width:1px; height:22px; background:#E2E8F0; margin:0 4px; flex-shrink:0; }
+.sp-fbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.sp-view-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:20px; border:1.5px solid #E2E8F0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.sp-view-btn:hover, .sp-view-btn.active { border-color:#0D9488; color:#0D9488; background:#F0FDFA; }
 
-.sp-nav-actions { display:flex; gap:8px; align-items:center; margin-left:auto; flex-shrink:0; }
-.sp-nav-login { padding:7px 16px; border-radius:9px; font-size:15px; font-weight:600; color: #074e48; border:1.5px solid #0D9488; background: #f7fcfb; cursor:pointer; font-family:inherit; text-decoration:none; }
-.sp-nav-login:hover { background: #e9fffa; }
-.sp-nav-reg { padding:7px 16px; border-radius:9px; font-size:15px; font-weight:600; color: #065e52; background: #f7fcfb; border:none; cursor:pointer; font-family:inherit; text-decoration:none; }
-.sp-nav-reg:hover { background: #e9fffa; }
-
-/* ── CHIPS filtres actifs ── */
-.sp-chipbar { background:#fff; border-bottom:1px solid #E2E8F0; padding:0 40px; }
-.sp-chipbar-in { max-width:1200px; margin:0 auto; display:flex; align-items:center; gap:8px; padding:10px 0; flex-wrap:wrap; }
-.sp-chip-lbl { font-size:12px; color:#64748B; font-weight:600; }
-.sp-chip { display:inline-flex; align-items:center; gap:5px; background:#F0FDFA; border:1px solid #99F6E4; color:#065F46; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; }
+/* CHIPS actifs */
+.sp-chips { background:#F8FAFC; border-bottom:1px solid #E2E8F0; padding:8px 32px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.sp-chips-in { max-width:1280px; margin:0 auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; }
+.sp-chip { display:inline-flex; align-items:center; gap:4px; background:#F0FDFA; border:1px solid #99F6E4; color:#065F46; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.1s; }
 .sp-chip:hover { background:#CCFBF1; }
-.sp-chip-x { opacity:0.6; }
-.sp-clear { font-size:12px; color:#94A3B8; cursor:pointer; font-weight:700; margin-left:4px; }
-.sp-clear:hover { color:#EF4444; }
+.sp-chip-clear { font-size:12px; color:#94A3B8; cursor:pointer; font-weight:700; }
+.sp-chip-clear:hover { color:#EF4444; }
 
-/* ── BODY ── */
-.sp-body { display:flex; max-width:1400px; margin:0 auto; padding:20px 15px; gap:40px; align-items:start; }
+/* MODAL FILTRE */
+.sp-modal-bg { position:fixed; inset:0; background:rgba(15,23,42,0.4); z-index:500; display:flex; align-items:flex-end; justify-content:center; backdrop-filter:blur(2px); animation:bgIn 0.2s ease; }
+@keyframes bgIn { from{opacity:0} to{opacity:1} }
+.sp-modal { background:#fff; border-radius:20px 20px 0 0; width:100%; max-width:560px; max-height:85vh; overflow-y:auto; padding:0 0 32px; animation:modalIn 0.25s ease; }
+@keyframes modalIn { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+.sp-modal-head { display:flex; justify-content:space-between; align-items:center; padding:20px 24px 16px; border-bottom:1px solid #F1F5F9; position:sticky; top:0; background:#fff; z-index:1; }
+.sp-modal-title { font-size:17px; font-weight:800; color:#0F172A; }
+.sp-modal-close { width:32px; height:32px; border-radius:50%; border:1.5px solid #E2E8F0; background:#fff; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; color:#64748B; }
+.sp-modal-close:hover { background:#F1F5F9; }
+.sp-modal-section { padding:20px 24px 0; }
+.sp-modal-sec-title { font-size:13px; font-weight:800; color:#0F172A; margin-bottom:12px; }
+.sp-modal-opts { display:flex; flex-direction:column; gap:0; border:1.5px solid #E2E8F0; border-radius:12px; overflow:hidden; }
+.sp-modal-opt { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; border-bottom:1px solid #F1F5F9; transition:background 0.1s; }
+.sp-modal-opt:last-child { border-bottom:none; }
+.sp-modal-opt:hover { background:#F8FAFC; }
+.sp-modal-opt.sel { background:#F0FDFA; }
+.sp-modal-opt input[type=radio], .sp-modal-opt input[type=checkbox] { accent-color:#0D9488; width:16px; height:16px; cursor:pointer; flex-shrink:0; }
+.sp-modal-opt-lbl { font-size:14px; color:#475569; font-weight:500; flex:1; }
+.sp-modal-opt.sel .sp-modal-opt-lbl { color:#065F46; font-weight:700; }
+.sp-modal-soon { font-size:10px; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; padding:2px 7px; border-radius:10px; font-weight:700; }
+.sp-modal-footer { padding:16px 24px 0; display:flex; gap:10px; }
+.sp-modal-reset { flex:1; padding:12px; border:1.5px solid #E2E8F0; border-radius:10px; background:#fff; color:#64748B; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.sp-modal-reset:hover { border-color:#EF4444; color:#EF4444; }
+.sp-modal-apply { flex:2; padding:12px; border:none; border-radius:10px; background:#0D9488; color:#fff; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+.sp-modal-apply:hover { background:#065a50; }
 
-/* ── SIDEBAR FILTRES ── */
-.sp-aside { width:310px; padding-right:10px; flex-shrink:0; position:sticky; top:84px; max-height:calc(100vh - 100px); overflow-y:auto; scrollbar-width:thin; }
-.sp-aside::-webkit-scrollbar { width:4px; }
-.sp-aside::-webkit-scrollbar-thumb { background: #e1e4e7; border-radius:4px; }
+/* BODY */
+.sp-body { max-width:1280px; margin:0 auto; padding:24px 32px; }
 
-.sp-filter { background:#fff; border:1px solid #E2E8F0; border-radius:14px; margin-bottom:12px; overflow:hidden; }
-.sp-filter-head { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; cursor:pointer; user-select:none; }
-.sp-filter-head-t { font-size:13px; font-weight:700; color:#0F172A; }
-.sp-filter-arrow { font-size:11px; color:#94A3B8; transition:transform 0.2s; }
-.sp-filter-arrow.open { transform:rotate(180deg); }
-.sp-filter-body { padding:4px 16px 14px; }
-.sp-filter-sep { height:1px; background:#F1F5F9; margin:0 16px; }
-
-.sp-fsearch { width:100%; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:7px 10px; font-size:12px; font-family:inherit; color:#0F172A; outline:none; margin-bottom:10px; }
-.sp-fsearch:focus { border-color:#0D9488; }
-.sp-fsearch::placeholder { color:#CBD5E1; }
-
-.sp-fopt { display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; }
-.sp-fopt input[type=radio], .sp-fopt input[type=checkbox] { accent-color:#0D9488; width:14px; height:14px; cursor:pointer; flex-shrink:0; }
-.sp-fopt-lbl { font-size:13px; color:#475569; font-weight:500; flex:1; }
-.sp-fopt:hover .sp-fopt-lbl { color:#0F172A; }
-
-.sp-wilaya-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; max-height:220px; overflow-y:auto; }
-.sp-wilaya-grid::-webkit-scrollbar { width:4px; }
-.sp-wilaya-grid::-webkit-scrollbar-thumb { background: #e1e3e6; }
-.sp-wopt { display:flex; align-items:center; gap:5px; padding:4px 6px; cursor:pointer; border-radius:5px; transition:background 0.1s; }
-.sp-wopt:hover { background:#F8FAFC; }
-.sp-wopt input { accent-color:#0D9488; width:13px; height:13px; flex-shrink:0; }
-.sp-wopt-code { font-size:9px; color:#94A3B8; font-weight:700; min-width:16px; }
-.sp-wopt-name { font-size:11px; color:#475569; font-weight:500; }
-.sp-wopt.sel .sp-wopt-name { color:#0D9488; font-weight:700; }
-
-.sp-spec-group-t { font-size:9px; font-weight:800; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin:10px 0 4px; }
-
-.sp-reset-btn { width:100%; padding:8px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; color:#DC2626; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; }
-.sp-reset-btn:hover { background:#FEE2E2; }
-
-/* ── RESULTS ── */
-.sp-results { flex:1; min-width:0; }
-.sp-results-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
-.sp-results-count { font-size:14px; color:#64748B; font-weight:500; }
-.sp-results-count strong { color:#0F172A; font-weight:800; }
+/* SORT & COUNT */
+.sp-results-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
+.sp-count { font-size:14px; color:#64748B; font-weight:500; }
+.sp-count strong { color:#0F172A; font-weight:800; font-size:16px; }
 .sp-sort-wrap { display:flex; align-items:center; gap:8px; }
 .sp-sort-lbl { font-size:12px; color:#94A3B8; font-weight:600; }
-.sp-sort-sel { background:#fff; border:1.5px solid #E2E8F0; border-radius:8px; padding:6px 12px; font-size:13px; font-family:inherit; color:#0F172A; outline:none; cursor:pointer; }
+.sp-sort-sel { background:#fff; border:1.5px solid #E2E8F0; border-radius:9px; padding:7px 12px; font-size:13px; font-family:inherit; color:#0F172A; outline:none; cursor:pointer; font-weight:600; }
+.sp-sort-sel:focus { border-color:#0D9488; }
 
-/* ── TABS ── */
-.sp-tabs { display:flex; gap:0; margin-bottom:16px; border-bottom:2px solid #E2E8F0; }
-.sp-tab { padding:13px 27px; font-size:15px; font-weight:700; color: #94A3B8; cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
-.sp-tab:hover { color: #0D9488; }
-.sp-tab.on { font-size:13px;
-  font-weight:800;
-  color:#0D9488;
-  border-bottom:3px solid #0D9488; }
+/* TABS */
+.sp-tabs { display:flex; gap:0; margin-bottom:18px; border-bottom:2px solid #E2E8F0; }
+.sp-tab { padding:11px 24px; font-size:14px; font-weight:600; color:#94A3B8; cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+.sp-tab:hover { color:#0D9488; }
+.sp-tab.on { color:#0D9488; font-weight:800; border-bottom:2px solid #0D9488; }
 
-/* ── DOCTOR CARD (même style que featureCard de HomePage) ── */
-.sp-doc-card {
-  background:#fff; border:1.5px solid #E2E8F0; border-radius:16px;height: 200px;
-  padding:20px; margin-bottom:10px; display:flex; gap:16px;
-  cursor:pointer; transition:all 0.18s;
-  box-shadow:0 1px 3px rgba(0,0,0,0.05);
-}
-.sp-doc-card:hover { border-color:#0D9488; box-shadow:0 4px 20px rgba(13,148,136,0.12); transform:translateY(-1px); }
+/* DOCTOR CARD — style Doctolib */
+.sp-doc-card { background:#fff; border:1.5px solid #E2E8F0; border-radius:16px; padding:20px 22px; margin-bottom:10px; display:flex; gap:18px; cursor:pointer; transition:all 0.18s; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+.sp-doc-card:hover { border-color:#0D9488; box-shadow:0 6px 24px rgba(13,148,136,0.13); transform:translateY(-2px); }
 
-.sp-doc-av {
-  width:72px; height:72px; border-radius:50%; flex-shrink:0;
-  background:linear-gradient(135deg, #065a50, #0D9488);
-  display:flex; align-items:center; justify-content:center;
-  font-size:22px; font-weight:900; color:#fff; letter-spacing:-0.5px;
-}
+.sp-doc-av { width:76px; height:76px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#065a50 0%,#0D9488 100%); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900; color:#fff; letter-spacing:-0.5px; border:3px solid #E2E8F0; }
+.sp-doc-av img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+
 .sp-doc-body { flex:1; min-width:0; }
-.sp-doc-name { font-size:19px; font-weight:800; color:#0F172A; margin-bottom:2px; letter-spacing:-0.3px; }
-.sp-doc-spec { font-size:15px; color: #0d8076; font-weight:700; margin-bottom:6px; }
-.sp-doc-meta { display:flex; align-items:center; gap:6px; font-size:14px; color:#64748B; margin-bottom:8px; flex-wrap:wrap; }
-.sp-doc-meta-sep { color: #d3dbe6; }
-.sp-doc-verified { display:inline-flex; align-items:center; gap:3px; font-size:13px; color:#059669; font-weight:700; background:#ECFDF5; padding:2px 7px; border-radius:20px; border:1px solid #A7F3D0; }
-.sp-doc-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
-.sp-doc-tag { font-size:11px; padding:3px 9px; background:#F0FDFA; border:1px solid #99F6E4; border-radius:20px; color:#065F46; font-weight:700; }
-.sp-doc-slots { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.sp-doc-slots-lbl { font-size:11px; color:#94A3B8; font-weight:600; }
-.sp-doc-slot {
-  font-size:13px; font-weight:800; color:#0D9488;
-  background: #F0FDFA; border:1.5px solid #99F6E4;
-  border-radius:7px; padding:4px 10px; cursor:pointer; transition:all 0.12s;
-  font-family:inherit;
-}
-.sp-doc-slot:hover { background: #19c5b7; color:#fff; border-color:#0D9488; }
+.sp-doc-name { font-size:17px; font-weight:800; color:#0F172A; margin-bottom:2px; }
+.sp-doc-name:hover { color:#0D9488; }
+.sp-doc-spec { font-size:14px; color:#0D9488; font-weight:700; margin-bottom:8px; }
+.sp-doc-row { display:flex; align-items:center; gap:6px; font-size:13px; color:#64748B; margin-bottom:5px; flex-wrap:wrap; }
+.sp-doc-row svg { color:#94A3B8; flex-shrink:0; }
+.sp-verified { display:inline-flex; align-items:center; gap:3px; font-size:11px; color:#059669; font-weight:700; background:#ECFDF5; padding:2px 7px; border-radius:20px; border:1px solid #A7F3D0; }
+.sp-doc-langs { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.sp-lang-tag { font-size:11px; padding:3px 9px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:20px; color:#475569; font-weight:600; }
 
-.sp-doc-right { display:flex; flex-direction:column; align-items:flex-end; gap:10px; min-width:130px; flex-shrink:0; }
-.sp-doc-price { font-size:18px; font-weight:800; color:#0F172A; text-align:right; letter-spacing:-0.5px; }
-.sp-doc-price-lbl { font-size:10px; color:#94A3B8; display:block; margin-top:1px; }
-.sp-doc-stars { display:flex; align-items:center; gap:4px; justify-content:flex-end; }
-.sp-doc-stars-ic { color:#F59E0B; font-size:13px; }
-.sp-doc-stars-ct { font-size:11px; color:#94A3B8; }
-.sp-rdv-btn {
-  background:#0D9488; color:#fff; border:none;
-  border-radius:10px; padding:9px 18px;
-  font-size:13px; font-weight:800; cursor:pointer;
-  font-family:inherit; transition:background 0.15s; white-space:nowrap;
-}
-.sp-rdv-btn:hover { background:#065a50; }
+.sp-doc-right { display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:10px; min-width:150px; flex-shrink:0; padding-left:18px; border-left:1px solid #F1F5F9; }
+.sp-stars { display:flex; align-items:center; gap:4px; }
+.sp-stars-ic { color:#F59E0B; font-size:13px; letter-spacing:-1px; }
+.sp-stars-ct { font-size:11px; color:#94A3B8; font-weight:600; }
+.sp-price { font-size:20px; font-weight:800; color:#0F172A; text-align:right; letter-spacing:-0.5px; }
+.sp-price-lbl { font-size:10px; color:#94A3B8; display:block; margin-top:1px; text-align:right; }
+.sp-rdv-btn { background:#0D9488; color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; width:100%; text-align:center; }
+.sp-rdv-btn:hover { background:#065a50; transform:translateY(-1px); box-shadow:0 4px 12px rgba(13,148,136,0.3); }
 
-/* ── LAB CARD ── */
-.sp-lab-card {
-  background:#fff; border:1.5px solid #E2E8F0; border-radius:16px;
-  padding:20px; margin-bottom:10px; display:flex; gap:16px;
-  cursor:pointer; transition:all 0.18s; box-shadow:0 1px 3px rgba(0,0,0,0.05);
-}
-.sp-lab-card:hover { border-color:#0D9488; box-shadow:0 4px 20px rgba(13,148,136,0.12); transform:translateY(-1px); }
-.sp-lab-ic { width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,#065a50,#0D9488); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
-.sp-lab-name { font-size:15px; font-weight:800; color:#0F172A; margin-bottom:4px; }
-.sp-lab-addr { font-size:12px; color:#64748B; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
-.sp-lab-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
-.sp-lab-tag { font-size:11px; padding:3px 8px; background:#F0FDFA; border:1px solid #99F6E4; border-radius:20px; color:#065F46; font-weight:600; }
-.sp-lab-hours { font-size:12px; color:#64748B; display:flex; align-items:center; gap:5px; }
-.sp-lab-phone { font-size:13px; font-weight:700; color:#0D9488; }
-.sp-lab-btn { background:#0D9488; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
-.sp-lab-btn:hover { background:#065a50; }
+/* LAB CARD */
+.sp-lab-card { background:#fff; border:1.5px solid #E2E8F0; border-radius:16px; padding:20px 22px; margin-bottom:10px; display:flex; gap:16px; cursor:pointer; transition:all 0.18s; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+.sp-lab-card:hover { border-color:#0D9488; box-shadow:0 6px 24px rgba(13,148,136,0.13); transform:translateY(-2px); }
+.sp-lab-ic { width:60px; height:60px; border-radius:14px; background:linear-gradient(135deg,#065a50,#0D9488); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
 
-/* ── EMPTY ── */
-.sp-empty { text-align:center; padding:60px 20px; }
-.sp-empty-ic { font-size:40px; margin-bottom:14px; opacity:0.35; }
-.sp-empty h3 { font-size:16px; font-weight:800; color:#0F172A; margin-bottom:6px; }
+/* MAP */
+.sp-map-wrap { border-radius:16px; overflow:hidden; border:1.5px solid #E2E8F0; box-shadow:0 2px 12px rgba(0,0,0,0.08); margin-bottom:16px; }
+#freya-map { height:480px; width:100%; }
+
+/* EMPTY */
+.sp-empty { text-align:center; padding:64px 20px; background:#fff; border-radius:16px; border:1.5px solid #E2E8F0; }
+.sp-empty-ic { font-size:48px; margin-bottom:16px; opacity:0.3; }
+.sp-empty h3 { font-size:17px; font-weight:800; color:#0F172A; margin-bottom:8px; }
 .sp-empty p { font-size:13px; color:#94A3B8; }
 
-/* ── SPINNER ── */
-.sp-spin { width:32px; height:32px; border:3px solid #E2E8F0; border-top-color:#0D9488; border-radius:50%; animation:sp-r 0.7s linear infinite; margin:60px auto; }
-@keyframes sp-r { to { transform:rotate(360deg); } }
+/* SPINNER */
+.sp-spin { width:36px; height:36px; border:3px solid #E2E8F0; border-top-color:#0D9488; border-radius:50%; animation:sp-r 0.7s linear infinite; margin:60px auto; }
+@keyframes sp-r { to{transform:rotate(360deg);} }
 
-/* ── PAGINATION ── */
+/* PAGINATION */
 .sp-pager { display:flex; justify-content:center; gap:5px; margin-top:24px; flex-wrap:wrap; }
-.sp-page-btn { min-width:36px; height:36px; border-radius:9px; border:1.5px solid #E2E8F0; background:#fff; color:#475569; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.12s; display:flex; align-items:center; justify-content:center; padding:0 10px; }
-.sp-page-btn:hover { border-color:#0D9488; color:#0D9488; }
-.sp-page-btn.on { background:#0D9488; color:#fff; border-color:#0D9488; }
-.sp-page-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.sp-pg-btn { min-width:38px; height:38px; border-radius:10px; border:1.5px solid #E2E8F0; background:#fff; color:#475569; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.12s; display:flex; align-items:center; justify-content:center; padding:0 10px; }
+.sp-pg-btn:hover { border-color:#0D9488; color:#0D9488; }
+.sp-pg-btn.on { background:#0D9488; color:#fff; border-color:#0D9488; }
+.sp-pg-btn:disabled { opacity:0.35; cursor:not-allowed; }
 
-@media(max-width:900px) { .sp-body { flex-direction:column; padding:16px 20px; } .sp-aside { position:static; width:100%; max-height:none; } .sp-nav { padding:0 20px; } .sp-chipbar { padding:0 20px; } }
+/* USER MENU */
+.sp-user-btn { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); cursor:pointer; transition:all 0.15s; margin-left:auto; flex-shrink:0; }
+.sp-user-btn:hover { background:rgba(255,255,255,0.2); }
+.sp-user-av { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.25); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.sp-user-name { font-size:13px; font-weight:700; color:#fff; }
+.sp-user-role { font-size:10px; color:rgba(255,255,255,0.65); }
+.sp-dropdown { position:absolute; top:54px; right:0; width:230px; background:#fff; border:1px solid #E2E8F0; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,0.12); z-index:300; overflow:hidden; }
+.sp-drop-top { padding:16px; border-bottom:1px solid #F1F5F9; display:flex; gap:10px; align-items:center; }
+.sp-drop-av { width:36px; height:36px; border-radius:50%; background:#0D9488; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
+.sp-drop-item { padding:11px 16px; font-size:13px; cursor:pointer; color:#0F172A; transition:background 0.1s; }
+.sp-drop-item:hover { background:#F8FAFC; }
+.sp-drop-item.danger { color:#EF4444; }
+.sp-drop-item.danger:hover { background:#FEF2F2; }
+
+@media(max-width:768px) { 
+  .sp-hero { padding:20px 16px 36px; } 
+  .sp-searchbar { flex-direction:column; height:auto; border-radius:12px; }
+  .sp-sb-field, .sp-sb-loc { border-right:none; border-bottom:1px solid #F1F5F9; height:52px; }
+  .sp-sb-btn { height:48px; border-radius:0 0 12px 12px; }
+  .sp-fbar { padding:0 16px; overflow-x:auto; }
+  .sp-fbar-in { gap:6px; }
+  .sp-body { padding:16px; }
+  .sp-doc-card { flex-direction:column; }
+  .sp-doc-right { flex-direction:row; border-left:none; border-top:1px solid #F1F5F9; padding-left:0; padding-top:12px; min-width:0; width:100%; }
+  .sp-nav { padding:0 16px; }
+}
 `;
 
 export default function DoctorSearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, logout } = useAuthStore();
+  const mapRef = useRef(null);
+  const leafletMap = useRef(null);
+  const markersRef = useRef([]);
 
-  const [query,          setQuery]          = useState(searchParams.get('specialite') || '');
-  const [wilaya,         setWilaya]         = useState(searchParams.get('wilaya') || '');
-  const [tab,            setTab]            = useState('doctors');
-  const [doctors,        setDoctors]        = useState([]);
-  const [labs,           setLabs]           = useState([]);
-  const [loading,        setLoading]        = useState(false);
-  const [total,          setTotal]          = useState(0);
-  const [page,           setPage]           = useState(1);
+  /* ─── State ─── */
+  const [query,        setQuery]       = useState(searchParams.get('specialite') || '');
+  const [wilaya,       setWilaya]      = useState(searchParams.get('wilaya') || '');
+  const [tab,          setTab]         = useState('doctors');
+  const [doctors,      setDoctors]     = useState([]);
+  const [labs,         setLabs]        = useState([]);
+  const [loading,      setLoading]     = useState(false);
+  const [total,        setTotal]       = useState(0);
+  const [page,         setPage]        = useState(1);
+  const [showMap,      setShowMap]     = useState(false);
+  const [showUserMenu, setShowUserMenu]= useState(false);
+
+  /* Filtres */
+  const [selWilayas,  setSelWilayas]  = useState(searchParams.get('wilaya') ? [searchParams.get('wilaya')] : []);
+  const [selSpecs,    setSelSpecs]    = useState(searchParams.get('specialite') ? [searchParams.get('specialite')] : []);
+  const [priceRange,  setPriceRange]  = useState(0);
+  const [selLangs,    setSelLangs]    = useState([]);
+  const [sortBy,      setSortBy]      = useState('rating');
+
+  /* Modals filtres */
+  const [openModal,   setOpenModal]   = useState(null); // 'spec' | 'wilaya' | 'price' | 'lang'
+  const [specSearch,  setSpecSearch]  = useState('');
+  const [wilayaSearch,setWilayaSearch]= useState('');
+
   const PER_PAGE = 10;
 
-  const [selWilayas,     setSelWilayas]     = useState(searchParams.get('wilaya') ? [searchParams.get('wilaya')] : []);
-  const [selSpecs,       setSelSpecs]       = useState(searchParams.get('specialite') ? [searchParams.get('specialite')] : []);
-  const [priceRange,     setPriceRange]     = useState(0);
-  const [sortBy,         setSortBy]         = useState('rating');
-  const [specSearch,     setSpecSearch]     = useState('');
-  const [wilayaSearch,   setWilayaSearch]   = useState('');
-  const [openSec,        setOpenSec]        = useState({wilaya:true, spec:true, price:true});
+  /* ─── User info ─── */
+  const firstName = user?.firstName || user?.first_name || 'Patient';
+  const lastName  = user?.lastName  || user?.last_name  || '';
+  const initials  = `${firstName[0]||'P'}${lastName[0]||''}`.toUpperCase();
+  const handleLogout = () => { logout(); navigate('/login'); toast.success('Déconnecté'); };
 
-  const toggle = k => setOpenSec(p => ({...p,[k]:!p[k]}));
+  /* ─── Fetch ─── */
+  const sort = (list, s) => {
+    const c = [...list];
+    switch(s) {
+      case 'rating':     return c.sort((a,b) => (b.ratingAvg||0)-(a.ratingAvg||0));
+      case 'price_asc':  return c.sort((a,b) => (a.consultationPrice||0)-(b.consultationPrice||0));
+      case 'price_desc': return c.sort((a,b) => (b.consultationPrice||0)-(a.consultationPrice||0));
+      case 'experience': return c.sort((a,b) => (b.experienceYears||0)-(a.experienceYears||0));
+      case 'name':       return c.sort((a,b) => `${a.user?.lastName}`.localeCompare(`${b.user?.lastName}`));
+      default: return c;
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (tab === 'doctors') {
-        const p = {page, limit:PER_PAGE};
+        const p = { page, limit: PER_PAGE };
         if (selWilayas.length === 1) p.wilaya     = selWilayas[0];
         if (selSpecs.length > 0)     p.specialite = selSpecs[0];
         else if (query)              p.specialite = query;
         if (priceRange > 0) { p.minPrice = PRICE_RANGES[priceRange].min; p.maxPrice = PRICE_RANGES[priceRange].max; }
-        const r = await api.get('/doctors', {params:p});
+        const r = await api.get('/doctors', { params: p });
         let list = r.data.doctors || r.data || [];
         list = sort(list, sortBy);
         setDoctors(list);
         setTotal(r.data.total || list.length);
       } else {
-        const p = {page, limit:PER_PAGE};
+        const p = { page, limit: PER_PAGE };
         if (selWilayas.length === 1) p.wilaya = selWilayas[0];
         if (query) p.name = query;
-        const r = await api.get('/laboratory', {params:p});
+        const r = await api.get('/laboratory', { params: p });
         setLabs(r.data.labs || r.data || []);
         setTotal(r.data.total || (r.data.labs || r.data || []).length);
       }
@@ -297,91 +340,263 @@ export default function DoctorSearchPage() {
   useEffect(() => { setPage(1); }, [selWilayas, selSpecs, query, priceRange, sortBy, tab]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const sort = (list, s) => {
-    const c = [...list];
-    switch(s) {
-      case 'rating':     return c.sort((a,b) => (b.ratingAvg||0) - (a.ratingAvg||0));
-      case 'price_asc':  return c.sort((a,b) => (a.consultationPrice||0) - (b.consultationPrice||0));
-      case 'price_desc': return c.sort((a,b) => (b.consultationPrice||0) - (a.consultationPrice||0));
-      case 'experience': return c.sort((a,b) => (b.experienceYears||0) - (a.experienceYears||0));
-      case 'name':       return c.sort((a,b) => `${a.user?.lastName}`.localeCompare(`${b.user?.lastName}`));
-      default: return c;
-    }
-  };
+  /* ─── Leaflet Map ─── */
+  useEffect(() => {
+    if (!showMap || tab !== 'doctors') return;
 
-  const toggleWilaya = nom => setSelWilayas(p => p.includes(nom) ? p.filter(w=>w!==nom) : [...p,nom]);
-  const toggleSpec   = s   => setSelSpecs(p   => p.includes(s)   ? p.filter(x=>x!==s)   : [...p,s]);
-  const resetAll = () => { setSelWilayas([]); setSelSpecs([]); setQuery(''); setWilaya(''); setPriceRange(0); setSortBy('rating'); setPage(1); };
+    const initMap = () => {
+      if (!mapRef.current || leafletMap.current) return;
+      const L = window.L;
+      if (!L) return;
+
+      const center = selWilayas.length === 1 && WILAYA_COORDS[selWilayas[0]]
+        ? [WILAYA_COORDS[selWilayas[0]].lat, WILAYA_COORDS[selWilayas[0]].lng]
+        : [28.0339, 1.6596]; // Centre Algérie
+
+      const map = L.map('freya-map', { zoomControl: true }).setView(center, selWilayas.length === 1 ? 10 : 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+      }).addTo(map);
+      leafletMap.current = map;
+    };
+
+    // Charger Leaflet si pas encore chargé
+    if (!window.L) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = initMap;
+      document.head.appendChild(script);
+    } else {
+      setTimeout(initMap, 100);
+    }
+
+    return () => {
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+      }
+    };
+  }, [showMap, tab]);
+
+  // Mettre à jour les markers quand les doctors changent
+  useEffect(() => {
+    if (!showMap || !leafletMap.current || !window.L) return;
+    const L = window.L;
+    const map = leafletMap.current;
+
+    // Supprimer anciens markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    doctors.forEach(doc => {
+      const coords = WILAYA_COORDS[doc.wilaya];
+      if (!coords) return;
+      // Légère dispersion pour éviter superposition
+      const lat = coords.lat + (Math.random() - 0.5) * 0.08;
+      const lng = coords.lng + (Math.random() - 0.5) * 0.08;
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="background:#0D9488;color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;">${(doc.user?.firstName?.[0]||'')+(doc.user?.lastName?.[0]||'')}</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+
+      const marker = L.marker([lat, lng], { icon })
+        .addTo(map)
+        .bindPopup(`
+          <div style="font-family:DM Sans,sans-serif;min-width:180px;">
+            <strong style="font-size:14px;color:#0F172A;">Dr. ${doc.user?.firstName} ${doc.user?.lastName}</strong><br/>
+            <span style="font-size:12px;color:#0D9488;font-weight:700;">${doc.specialite||''}</span><br/>
+            <span style="font-size:11px;color:#64748B;">${doc.city||''} ${doc.wilaya||''}</span><br/>
+            <span style="font-size:13px;font-weight:800;color:#0F172A;">${doc.consultationPrice?.toLocaleString('fr-DZ')||'—'} DA</span><br/>
+            <button onclick="window.location.href='/medecin/${doc.id}'" style="margin-top:8px;background:#0D9488;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">Prendre RDV</button>
+          </div>
+        `);
+      markersRef.current.push(marker);
+    });
+  }, [doctors, showMap]);
+
+  /* ─── Helpers ─── */
+  const toggleWilaya = nom => setSelWilayas(p => p.includes(nom) ? p.filter(w => w !== nom) : [...p, nom]);
+  const toggleSpec   = s   => setSelSpecs(p   => p.includes(s)   ? p.filter(x => x !== s)   : [...p, s]);
+  const toggleLang   = l   => setSelLangs(p   => p.includes(l)   ? p.filter(x => x !== l)   : [...p, l]);
+  const resetAll = () => { setSelWilayas([]); setSelSpecs([]); setQuery(''); setWilaya(''); setPriceRange(0); setSelLangs([]); setSortBy('rating'); setPage(1); };
 
   const activeFilters = [
-    ...selWilayas.map(w => ({label:w, rm:() => setSelWilayas(p=>p.filter(x=>x!==w))})),
-    ...selSpecs.map(s   => ({label:s, rm:() => setSelSpecs(p=>p.filter(x=>x!==s))})),
-    ...(priceRange>0 ? [{label:PRICE_RANGES[priceRange].label, rm:()=>setPriceRange(0)}] : []),
+    ...selSpecs.map(s   => ({ label: s,                              rm: () => setSelSpecs(p => p.filter(x => x !== s)) })),
+    ...selWilayas.map(w => ({ label: w,                              rm: () => setSelWilayas(p => p.filter(x => x !== w)) })),
+    ...(priceRange > 0   ? [{ label: PRICE_RANGES[priceRange].label, rm: () => setPriceRange(0) }] : []),
+    ...selLangs.map(l   => ({ label: l,                              rm: () => setSelLangs(p => p.filter(x => x !== l)) })),
   ];
 
   const filteredWilayas = WILAYAS.filter(w => !wilayaSearch || w.nom.toLowerCase().includes(wilayaSearch.toLowerCase()) || w.code.includes(wilayaSearch));
   const filteredSpecs   = specSearch ? ALL_SPECS.filter(s => s.toLowerCase().includes(specSearch.toLowerCase())) : null;
 
-  const slots = () => {
-    const days=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    const t = new Date().getDay();
-    return [0,1,2].map(i=>{const d=(t+i+1)%7;const h=[9,10,14,15][Math.floor(Math.random()*4)];const m=['00','30'][Math.floor(Math.random()*2)];return{day:days[d],time:`${h}:${m}`};});
-  };
+  const initials2 = d => `${d.user?.firstName?.[0]||''}${d.user?.lastName?.[0]||''}`.toUpperCase();
+  const stars = n => '★'.repeat(Math.round(Math.min(n || 0, 5))) + '☆'.repeat(5 - Math.round(Math.min(n || 0, 5)));
+  const totalPages = Math.ceil(total / PER_PAGE);
 
-  const init = d => `${d.user?.firstName?.[0]||''}${d.user?.lastName?.[0]||''}`.toUpperCase();
-  const stars = n => '★'.repeat(Math.round(Math.min(n||0,5)));
-  const totalPages = Math.ceil(total/PER_PAGE);
-
+  /* ─── Render ─── */
   return (
     <>
       <style>{css}</style>
-      <div className="sp">
+      <div className="sp" onClick={() => { setShowUserMenu(false); }}>
 
-        {/* NAV */}
-        <nav className="sp-nav">
-          <div className="sp-nav-in">
-            <Link to="/" className="sp-logo">Freya<em>.</em></Link>
-            <div className="sp-sbar">
-              <div className="sp-sbar-f">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input placeholder={tab==='doctors' ? 'Spécialité, médecin...' : 'Nom du laboratoire...'} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchData()} list="sp-sl"/>
-                <datalist id="sp-sl">{ALL_SPECS.map(s=><option key={s} value={s}/>)}</datalist>
+       {/* ── NAVBAR ── */}
+<nav className="sp-nav">
+  <div className="sp-nav-in">
+    <Link to="/" className="sp-logo">Freya</Link>
+
+    <div className="sp-nav-links">
+      <Link to="/patient" className="sp-nav-link">Accueil</Link>
+      <Link to="/patient/appointments" className="sp-nav-link">Mes rendez-vous</Link>
+      <Link to="/search" className="sp-nav-link active">Trouver un médecin</Link>
+      <Link to="/patient/messages" className="sp-nav-link">Messages</Link>
+      <Link to="/patient/dossier" className="sp-nav-link">Dossier médical</Link>
+    </div>
+
+    <div className="sp-nav-right">
+      <Link to="/search" className="sp-nav-btn-rdv">Prendre RDV</Link>
+
+      {user ? (
+        <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
+          <div className="sp-user-pill" onClick={() => setShowUserMenu(v => !v)}>
+            <div className="sp-user-av">{initials}</div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{firstName} {lastName}</div>
+              <div style={{ fontSize:11, color:'#94A3B8' }}>Patient</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          {showUserMenu && (
+            <div className="sp-dropdown">
+              <div className="sp-drop-top">
+                <div className="sp-drop-av">{initials}</div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700 }}>{firstName} {lastName}</div>
+                  <div style={{ fontSize:11, color:'#94A3B8' }}>{user?.email}</div>
+                </div>
               </div>
-              <div className="sp-sbar-l">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <select value={wilaya} onChange={e=>{setWilaya(e.target.value);setSelWilayas(e.target.value?[e.target.value]:[]);}}>
-                  <option value="">Toutes wilayas</option>
-                  {WILAYAS.map(w=><option key={w.code} value={w.nom}>{w.code} – {w.nom}</option>)}
+              <div style={{ padding:'6px' }}>
+                <div className="sp-drop-item" onClick={() => navigate('/patient')}>🏠 Accueil</div>
+                <div className="sp-drop-item" onClick={() => navigate('/patient/appointments')}>📅 Mes rendez-vous</div>
+                <div className="sp-drop-item" onClick={() => navigate('/patient/messages')}>💬 Messages</div>
+                <div className="sp-drop-item" onClick={() => navigate('/patient/notifications')}>🔔 Notifications</div>
+                <div className="sp-drop-item" onClick={() => navigate('/patient/profile')}>👤 Mon profil</div>
+                <div className="sp-drop-item danger" onClick={handleLogout}>🚪 Déconnexion</div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display:'flex', gap:8 }}>
+          <Link to="/login"    style={{ padding:'7px 16px', borderRadius:9, fontSize:13, fontWeight:600, color:'#0D9488', border:'1.5px solid #E2E8F0', background:'#fff', textDecoration:'none' }}>Se connecter</Link>
+          <Link to="/register" style={{ padding:'7px 16px', borderRadius:9, fontSize:13, fontWeight:600, color:'#fff', border:'none', background:'#0D9488', textDecoration:'none' }}>S'inscrire</Link>
+        </div>
+      )}
+    </div>
+  </div>
+</nav>
+
+        {/* ── HERO SEARCH ── */}
+        <div className="sp-hero">
+          <div className="sp-hero-in">
+            <div className="sp-hero-title">Trouvez le bon <span>médecin</span> près de chez vous</div>
+            <div className="sp-searchbar">
+              <div className="sp-sb-field" style={{ flex: 2 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input
+                  placeholder="Spécialité, nom du médecin..."
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && fetchData()}
+                  list="sp-spec-list"
+                />
+                <datalist id="sp-spec-list">{ALL_SPECS.map(s => <option key={s} value={s}/>)}</datalist>
+              </div>
+              <div className="sp-sb-loc">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <select value={wilaya} onChange={e => { setWilaya(e.target.value); setSelWilayas(e.target.value ? [e.target.value] : []); }}>
+                  <option value="">Toute l'Algérie</option>
+                  {WILAYAS.map(w => <option key={w.code} value={w.nom}>{w.code} – {w.nom}</option>)}
                 </select>
               </div>
-              <button className="sp-sbar-btn" onClick={fetchData}>Rechercher</button>
-            </div>
-            <div className="sp-nav-actions">
-              <Link to="/login"    className="sp-nav-login">Se connecter</Link>
-              <Link to="/register" className="sp-nav-reg">S'inscrire</Link>
+              <button className="sp-sb-btn" onClick={fetchData}>Rechercher</button>
             </div>
           </div>
-        </nav>
+        </div>
 
-        {/* CHIPS */}
+        {/* ── FILTER BAR ── */}
+        <div className="sp-fbar">
+          <div className="sp-fbar-in">
+            <button className={`sp-fbtn${selSpecs.length > 0 ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setOpenModal('spec'); }}>
+              🩺 Spécialité
+              {selSpecs.length > 0 && <span className="sp-fbtn-badge">{selSpecs.length}</span>}
+            </button>
+            <button className={`sp-fbtn${selWilayas.length > 0 ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setOpenModal('wilaya'); }}>
+              📍 Wilaya
+              {selWilayas.length > 0 && <span className="sp-fbtn-badge">{selWilayas.length}</span>}
+            </button>
+            <button className={`sp-fbtn${priceRange > 0 ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setOpenModal('price'); }}>
+              💰 Tarif
+              {priceRange > 0 && <span className="sp-fbtn-badge">1</span>}
+            </button>
+            <button className="sp-fbtn" onClick={e => { e.stopPropagation(); setOpenModal('dispo'); }}>
+              📅 Disponibilités
+              <span className="sp-fbtn-soon">Bientôt</span>
+            </button>
+            <button className={`sp-fbtn${selLangs.length > 0 ? ' active' : ''}`} onClick={e => { e.stopPropagation(); setOpenModal('lang'); }}>
+              🌐 Langue
+              {selLangs.length > 0 && <span className="sp-fbtn-badge">{selLangs.length}</span>}
+            </button>
+
+            {activeFilters.length > 0 && (
+              <>
+                <div className="sp-fbar-sep"/>
+                <span className="sp-chip-clear" onClick={resetAll}>✕ Tout effacer</span>
+              </>
+            )}
+
+            <div className="sp-fbar-right">
+              <button className={`sp-view-btn${!showMap ? ' active' : ''}`} onClick={() => setShowMap(false)}>
+                ☰ Liste
+              </button>
+              <button className={`sp-view-btn${showMap ? ' active' : ''}`} onClick={() => setShowMap(true)}>
+                🗺️ Carte
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── CHIPS ACTIFS ── */}
         {activeFilters.length > 0 && (
-          <div className="sp-chipbar">
-            <div className="sp-chipbar-in">
-              <span className="sp-chip-lbl">Filtres :</span>
-              {activeFilters.map((f,i) => (
-                <button key={i} className="sp-chip" onClick={f.rm}>{f.label} <span className="sp-chip-x">×</span></button>
+          <div className="sp-chips">
+            <div className="sp-chips-in">
+              <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>Filtres actifs :</span>
+              {activeFilters.map((f, i) => (
+                <button key={i} className="sp-chip" onClick={f.rm}>{f.label} <span>×</span></button>
               ))}
-              <span className="sp-clear" onClick={resetAll}>Tout effacer</span>
             </div>
           </div>
         )}
 
-        {/* BODY */}
+        {/* ── BODY ── */}
         <div className="sp-body">
 
-          {/* FILTRES */}
-          <aside className="sp-aside">
+          {/* TABS */}
+          <div className="sp-tabs">
+            <button className={`sp-tab${tab === 'doctors' ? ' on' : ''}`} onClick={() => setTab('doctors')}>👨‍⚕️ Médecins</button>
+            <button className={`sp-tab${tab === 'labs' ? ' on' : ''}`}    onClick={() => setTab('labs')}>🔬 Laboratoires</button>
+          </div>
 
+<<<<<<< HEAD
             {/* Wilaya */}
             <div className="sp-filter">
               <div className="sp-filter-head" onClick={()=>toggle('wilaya')}>
@@ -584,10 +799,271 @@ export default function DoctorSearchPage() {
                 })}
                 <button className="sp-page-btn" disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}>›</button>
                 <button className="sp-page-btn" disabled={page===totalPages} onClick={()=>setPage(totalPages)}>»</button>
+=======
+          {/* SORT & COUNT */}
+          <div className="sp-results-head">
+            <p className="sp-count">
+              <strong>{total}</strong> {tab === 'doctors' ? 'médecin' : 'laboratoire'}{total !== 1 ? 's' : ''} trouvé{total !== 1 ? 's' : ''}
+              {selSpecs.length > 0 && <> · <span style={{ color: '#0D9488' }}>{selSpecs.join(', ')}</span></>}
+              {selWilayas.length > 0 && <> · <span style={{ color: '#0D9488' }}>{selWilayas.join(', ')}</span></>}
+            </p>
+            {tab === 'doctors' && (
+              <div className="sp-sort-wrap">
+                <span className="sp-sort-lbl">Trier :</span>
+                <select className="sp-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+>>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
               </div>
             )}
           </div>
+
+          {/* ── CARTE ── */}
+          {showMap && tab === 'doctors' && (
+            <div className="sp-map-wrap">
+              <div id="freya-map" ref={mapRef}/>
+            </div>
+          )}
+
+          {/* ── LISTE ── */}
+          {loading ? <div className="sp-spin"/> :
+            tab === 'doctors' ? (
+              doctors.length === 0 ? (
+                <div className="sp-empty">
+                  <div className="sp-empty-ic">🔍</div>
+                  <h3>Aucun médecin trouvé</h3>
+                  <p>Modifiez vos critères de recherche ou essayez une autre wilaya</p>
+                </div>
+              ) : doctors.map(doc => (
+                <div key={doc.id} className="sp-doc-card" onClick={() => navigate(`/medecin/${doc.id}`)}>
+                  <div className="sp-doc-av">
+                    {doc.profilePhoto
+                      ? <img src={doc.profilePhoto} alt=""/>
+                      : initials2(doc)
+                    }
+                  </div>
+                  <div className="sp-doc-body">
+                    <div className="sp-doc-name">Dr. {doc.user?.firstName} {doc.user?.lastName}</div>
+                    <div className="sp-doc-spec">{doc.specialite}</div>
+                    <div className="sp-doc-row">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {doc.city ? `${doc.city}, ` : ''}{doc.wilaya}
+                      <span style={{ color: '#E2E8F0' }}>·</span>
+                      {doc.experienceYears || 0} ans d'expérience
+                      {doc.ordreVerified && <span className="sp-verified">✓ Vérifié CNOM</span>}
+                    </div>
+                    {doc.languages && (
+                      <div className="sp-doc-langs">
+                        {doc.languages.split(',').map(l => <span key={l} className="sp-lang-tag">{l.trim()}</span>)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="sp-doc-right">
+                    <div className="sp-stars">
+                      <span className="sp-stars-ic">{stars(doc.ratingAvg)}</span>
+                      <span className="sp-stars-ct">({doc.ratingCount || 0})</span>
+                    </div>
+                    <div>
+                      <div className="sp-price">{doc.consultationPrice?.toLocaleString('fr-DZ') || '—'} <span style={{ fontSize: 13 }}>DA</span></div>
+                      <span className="sp-price-lbl">/ consultation</span>
+                    </div>
+                    <button className="sp-rdv-btn" onClick={e => { e.stopPropagation(); navigate(`/medecin/${doc.id}`); }}>
+                      Prendre RDV →
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              labs.length === 0 ? (
+                <div className="sp-empty">
+                  <div className="sp-empty-ic">🔬</div>
+                  <h3>Aucun laboratoire trouvé</h3>
+                  <p>Essayez une autre wilaya</p>
+                </div>
+              ) : labs.map(lab => (
+                <div key={lab.id} className="sp-lab-card" onClick={() => navigate(`/laboratoire/${lab.id}`)}>
+                  <div className="sp-lab-ic">🔬</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>{lab.name}</div>
+                    <div style={{ fontSize: 12, color: '#64748B', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {lab.city ? `${lab.city}, ` : ''}{lab.wilaya}{lab.address ? ` — ${lab.address}` : ''}
+                    </div>
+                    {lab.analyses && (
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 6 }}>
+                        {lab.analyses.split(',').slice(0, 4).map(a => (
+                          <span key={a} style={{ fontSize: 11, padding: '3px 8px', background: '#F0FDFA', border: '1px solid #99F6E4', borderRadius: 20, color: '#065F46', fontWeight: 600 }}>{a.trim()}</span>
+                        ))}
+                        {lab.analyses.split(',').length > 4 && <span style={{ fontSize: 11, padding: '3px 8px', background: '#F0FDFA', border: '1px solid #99F6E4', borderRadius: 20, color: '#065F46', fontWeight: 600 }}>+{lab.analyses.split(',').length - 4}</span>}
+                      </div>
+                    )}
+                    {lab.openingHours && <div style={{ fontSize: 12, color: '#64748B' }}>🕐 {lab.openingHours}</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, paddingLeft: 16, borderLeft: '1px solid #F1F5F9', flexShrink: 0 }}>
+                    {lab.phone && <span style={{ fontSize: 13, fontWeight: 700, color: '#0D9488' }}>📞 {lab.phone}</span>}
+                    <button style={{ background: '#0D9488', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }} onClick={e => { e.stopPropagation(); navigate(`/laboratoire/${lab.id}`); }}>Voir détails →</button>
+                  </div>
+                </div>
+              ))
+            )
+          }
+
+          {/* PAGINATION */}
+          {totalPages > 1 && !loading && (
+            <div className="sp-pager">
+              <button className="sp-pg-btn" disabled={page === 1} onClick={() => setPage(1)}>«</button>
+              <button className="sp-pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const p = page <= 4 ? i + 1 : page + i - 3;
+                if (p < 1 || p > totalPages) return null;
+                return <button key={p} className={`sp-pg-btn${p === page ? ' on' : ''}`} onClick={() => setPage(p)}>{p}</button>;
+              })}
+              <button className="sp-pg-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+              <button className="sp-pg-btn" disabled={page === totalPages} onClick={() => setPage(totalPages)}>»</button>
+            </div>
+          )}
         </div>
+
+        {/* ── MODALS FILTRES ── */}
+        {openModal && (
+          <div className="sp-modal-bg" onClick={() => setOpenModal(null)}>
+            <div className="sp-modal" onClick={e => e.stopPropagation()}>
+
+              {/* MODAL SPÉCIALITÉ */}
+              {openModal === 'spec' && (
+                <>
+                  <div className="sp-modal-head">
+                    <span className="sp-modal-title">🩺 Spécialité</span>
+                    <button className="sp-modal-close" onClick={() => setOpenModal(null)}>×</button>
+                  </div>
+                  <div className="sp-modal-section">
+                    <input style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 14 }} placeholder="Rechercher une spécialité..." value={specSearch} onChange={e => setSpecSearch(e.target.value)}/>
+                    <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+                      {(filteredSpecs || ALL_SPECS).length === 0 ? (
+                        <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: 13, padding: '20px 0' }}>Aucune spécialité trouvée</p>
+                      ) : filteredSpecs ? filteredSpecs.map(s => (
+                        <div key={s} className={`sp-modal-opt${selSpecs.includes(s) ? ' sel' : ''}`} onClick={() => toggleSpec(s)}>
+                          <input type="checkbox" checked={selSpecs.includes(s)} readOnly/>
+                          <span className="sp-modal-opt-lbl">{s}</span>
+                        </div>
+                      )) : Object.entries(SPECS_GROUPED).map(([g, specs]) => (
+                        <div key={g}>
+                          <div style={{ fontSize: 10, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1, margin: '14px 0 6px', padding: '0 4px' }}>{g}</div>
+                          <div className="sp-modal-opts">
+                            {specs.map(s => (
+                              <div key={s} className={`sp-modal-opt${selSpecs.includes(s) ? ' sel' : ''}`} onClick={() => toggleSpec(s)}>
+                                <input type="checkbox" checked={selSpecs.includes(s)} readOnly/>
+                                <span className="sp-modal-opt-lbl">{s}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sp-modal-footer">
+                    <button className="sp-modal-reset" onClick={() => setSelSpecs([])}>Effacer</button>
+                    <button className="sp-modal-apply" onClick={() => { setOpenModal(null); fetchData(); }}>Afficher les résultats</button>
+                  </div>
+                </>
+              )}
+
+              {/* MODAL WILAYA */}
+              {openModal === 'wilaya' && (
+                <>
+                  <div className="sp-modal-head">
+                    <span className="sp-modal-title">📍 Wilaya</span>
+                    <button className="sp-modal-close" onClick={() => setOpenModal(null)}>×</button>
+                  </div>
+                  <div className="sp-modal-section">
+                    <input style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 14 }} placeholder="Chercher une wilaya..." value={wilayaSearch} onChange={e => setWilayaSearch(e.target.value)}/>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, maxHeight: 340, overflowY: 'auto' }}>
+                      {filteredWilayas.map(w => (
+                        <div key={w.code} className={`sp-modal-opt${selWilayas.includes(w.nom) ? ' sel' : ''}`} onClick={() => toggleWilaya(w.nom)} style={{ borderRadius: 8 }}>
+                          <input type="checkbox" checked={selWilayas.includes(w.nom)} readOnly/>
+                          <span style={{ fontSize: 10, color: '#94A3B8', fontWeight: 700, minWidth: 16 }}>{w.code}</span>
+                          <span className="sp-modal-opt-lbl" style={{ fontSize: 12 }}>{w.nom}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sp-modal-footer">
+                    <button className="sp-modal-reset" onClick={() => setSelWilayas([])}>Effacer</button>
+                    <button className="sp-modal-apply" onClick={() => { setOpenModal(null); fetchData(); }}>Afficher les résultats</button>
+                  </div>
+                </>
+              )}
+
+              {/* MODAL TARIF */}
+              {openModal === 'price' && (
+                <>
+                  <div className="sp-modal-head">
+                    <span className="sp-modal-title">💰 Tarif de consultation</span>
+                    <button className="sp-modal-close" onClick={() => setOpenModal(null)}>×</button>
+                  </div>
+                  <div className="sp-modal-section">
+                    <div className="sp-modal-opts">
+                      {PRICE_RANGES.map((r, i) => (
+                        <div key={i} className={`sp-modal-opt${priceRange === i ? ' sel' : ''}`} onClick={() => setPriceRange(i)}>
+                          <input type="radio" name="price" checked={priceRange === i} readOnly/>
+                          <span className="sp-modal-opt-lbl">{r.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sp-modal-footer">
+                    <button className="sp-modal-reset" onClick={() => setPriceRange(0)}>Effacer</button>
+                    <button className="sp-modal-apply" onClick={() => { setOpenModal(null); fetchData(); }}>Afficher les résultats</button>
+                  </div>
+                </>
+              )}
+
+              {/* MODAL DISPONIBILITÉS — bientôt */}
+              {openModal === 'dispo' && (
+                <>
+                  <div className="sp-modal-head">
+                    <span className="sp-modal-title">📅 Disponibilités</span>
+                    <button className="sp-modal-close" onClick={() => setOpenModal(null)}>×</button>
+                  </div>
+                  <div className="sp-modal-section" style={{ textAlign: 'center', padding: '40px 24px' }}>
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>🗓️</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>Bientôt disponible</div>
+                    <div style={{ fontSize: 13, color: '#94A3B8', lineHeight: 1.6 }}>La fonctionnalité de filtrage par disponibilité sera disponible prochainement, une fois les agendas des médecins intégrés à la plateforme.</div>
+                  </div>
+                  <div className="sp-modal-footer">
+                    <button className="sp-modal-apply" onClick={() => setOpenModal(null)}>Fermer</button>
+                  </div>
+                </>
+              )}
+
+              {/* MODAL LANGUE */}
+              {openModal === 'lang' && (
+                <>
+                  <div className="sp-modal-head">
+                    <span className="sp-modal-title">🌐 Langue parlée</span>
+                    <button className="sp-modal-close" onClick={() => setOpenModal(null)}>×</button>
+                  </div>
+                  <div className="sp-modal-section">
+                    <div className="sp-modal-opts">
+                      {LANGUAGES.map(l => (
+                        <div key={l} className={`sp-modal-opt${selLangs.includes(l) ? ' sel' : ''}`} onClick={() => toggleLang(l)}>
+                          <input type="checkbox" checked={selLangs.includes(l)} readOnly/>
+                          <span className="sp-modal-opt-lbl">{l}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sp-modal-footer">
+                    <button className="sp-modal-reset" onClick={() => setSelLangs([])}>Effacer</button>
+                    <button className="sp-modal-apply" onClick={() => { setOpenModal(null); fetchData(); }}>Afficher les résultats</button>
+                  </div>
+                </>
+              )}
+
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );

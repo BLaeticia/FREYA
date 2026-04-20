@@ -1,10 +1,12 @@
 const prisma = require('../prisma/client');
 
 const getAll = async (userId) => {
+  console.log('🔔 getAll notifications pour userId:', userId);
   const [notifications, unread] = await Promise.all([
     prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 50 }),
     prisma.notification.count({ where: { userId, isRead: false } })
   ]);
+  console.log('🔔 résultat:', notifications.length, 'notifications');
   return { notifications, unread };
 };
 

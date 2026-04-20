@@ -25,7 +25,7 @@ export default function LoginPage() {
       
       console.log('✅ Réponse login:', res.data);
       login(res.data.token, res.data.user);
-      toast.success(`Bienvenue ${res.data.user.first_name} !`);
+      toast.success(`Bienvenue ${res.data.user.firstName} !`);
       
       const role = res.data.user.role;
       navigate(role === 'doctor' ? '/doctor' : role === 'admin' ? '/admin' : '/patient');
