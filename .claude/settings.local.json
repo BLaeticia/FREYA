@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Start-Service -Name \"postgresql-x64-18\" 2>&1)",
+      "PowerShell(Get-Service -Name \"postgresql-x64-18\")",
+      "PowerShell($env:PGPASSWORD = \"\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h localhost -p 5432 -c \"\\\\l\" -w 2>&1 | Select-Object -First 30)",
+      "PowerShell($body = '{\"email\":\"admin@freya.dz\",\"password\":\"admin123\"}'; try { $r = Invoke-WebRequest -Uri \"http://localhost:5000/api/auth/login\" -Method POST -Body $body -ContentType \"application/json\"; \"$\\($r.StatusCode\\): $\\($r.Content.Substring\\(0,200\\)\\)\" } catch { \"$\\($_.Exception.Response.StatusCode.value__\\): $\\($_.ErrorDetails.Message\\)\" })",
+      "PowerShell(wmic process where \"ProcessId=10376\" get CommandLine 2>&1)",
+      "PowerShell(netstat -ano | findstr \":5000\" 2>&1; Get-Process | Where-Object { $_.Id -eq 10376 } | Select-Object Name, Id, Path 2>&1)"
+    ]
+  }
+}
