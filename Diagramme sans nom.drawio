@@ -1,39 +1,43 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="M3Wr9kkUYFKLP2dL0_R7">
-    <mxGraphModel dx="1106" dy="644" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1124" dy="644" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="light-dark(#FFFFFF,#FFFFFF)" math="0" shadow="1">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="freya" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;strokeWidth=2;fontSize=14;align=center;fontColor=#ffffff;" value="&lt;b&gt;Site Médical Freya&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot;&gt;[Système Central]&lt;/font&gt;" vertex="1">
+        <mxCell id="freya" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;strokeWidth=2;fontSize=14;align=center;fontColor=light-dark(#000000,#0D0D0D);" value="&lt;b&gt;Site Médical Freya&lt;/b&gt;&lt;br&gt;&lt;font size=&quot;1&quot;&gt;[Système Central]&lt;/font&gt;" vertex="1">
           <mxGeometry height="100" width="200" x="344" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="patient" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;fontStyle=1" value="Patient" vertex="1">
-          <mxGeometry height="80" width="40" x="10" y="270" as="geometry" />
-        </mxCell>
-        <mxCell id="medecin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b1ff;strokeWidth=2;fontSize=12;fontStyle=1" value="Médecin" vertex="1">
-          <mxGeometry height="80" width="40" x="717" y="150" as="geometry" />
-        </mxCell>
-        <mxCell id="admin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=12;fontStyle=1" value="Administrateur" vertex="1">
-          <mxGeometry height="80" width="40" x="424" y="40" as="geometry" />
-        </mxCell>
-        <mxCell id="flow_patient_freya" edge="1" parent="1" source="patient" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=classic;endArrow=classic;strokeWidth=1.5;fontSize=11;align=left;labelBackgroundColor=#ffffff;" value="&lt;b&gt;Interactions Patient :&lt;/b&gt;&lt;br&gt;• Prise de rendez-vous&lt;br&gt;• Consultation du dossier médical&lt;br&gt;• Réception des ordonnances">
+        <mxCell id="0oInK56q4f-W4GklZcOu-1" edge="1" parent="1" source="patient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;fontColor=light-dark(#000000,#0D0D0D);">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint as="offset" />
-            <mxPoint x="60" y="310" as="sourcePoint" />
-            <mxPoint x="340" y="310" as="targetPoint" />
+            <mxPoint x="340" y="280" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="flow_medecin_freya" edge="1" parent="1" source="freya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=classic;endArrow=classic;strokeWidth=1.5;fontSize=11;align=left;labelBackgroundColor=#ffffff;" target="medecin" value="&lt;b&gt;Interactions Médecin :&lt;/b&gt;&lt;br&gt;• Gestion des consultations&lt;br&gt;• Saisie des ordonnances&lt;br&gt;• Accès aux fiches patients">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="450" y="310" as="sourcePoint" />
-            <mxPoint x="620" y="310" as="targetPoint" />
-          </mxGeometry>
+        <mxCell id="patient" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=light-dark(#000000,#0D0D0D);" value="Patient" vertex="1">
+          <mxGeometry height="80" width="40" x="200" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="flow_admin_freya" edge="1" parent="1" source="admin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=classic;endArrow=classic;strokeWidth=1.5;fontSize=11;align=left;labelBackgroundColor=#ffffff;fillColor=#d80073;strokeColor=#A50040;" target="freya" value="&lt;b&gt;Administration :&lt;/b&gt;&lt;br&gt;• Gestion des comptes&lt;br&gt;• Maintenance du système&lt;br&gt;• Suivi des logs &amp;amp; sécurité">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="340" y="210" as="sourcePoint" />
-            <mxPoint x="340" y="250" as="targetPoint" />
-          </mxGeometry>
+        <mxCell id="0oInK56q4f-W4GklZcOu-2" edge="1" parent="1" source="medecin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontColor=light-dark(#000000,#0D0D0D);" target="freya">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="medecin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b1ff;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=light-dark(#000000,#0D0D0D);" value="Médecin" vertex="1">
+          <mxGeometry height="80" width="40" x="640" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="0oInK56q4f-W4GklZcOu-4" edge="1" parent="1" source="admin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;fontColor=light-dark(#000000,#0D0D0D);" target="freya">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=light-dark(#000000,#0D0D0D);" value="Administrateur" vertex="1">
+          <mxGeometry height="80" width="40" x="424" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="0oInK56q4f-W4GklZcOu-6" edge="1" parent="1" source="0oInK56q4f-W4GklZcOu-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;fontColor=light-dark(#000000,#0D0D0D);" target="freya">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0oInK56q4f-W4GklZcOu-5" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#60a917;fontColor=light-dark(#000000,#0D0D0D);strokeColor=#2D7600;textShadow=1;" value="Secretaire du labo\hopital" vertex="1">
+          <mxGeometry height="70" width="50" x="500" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="0oInK56q4f-W4GklZcOu-10" edge="1" parent="1" source="0oInK56q4f-W4GklZcOu-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;fontColor=light-dark(#000000,#0D0D0D);" target="freya">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="0oInK56q4f-W4GklZcOu-9" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontColor=light-dark(#000000,#0D0D0D);fillColor=#a20025;strokeColor=#6F0000;" value="Visiteur" vertex="1">
+          <mxGeometry height="80" width="56" x="357" y="395" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
