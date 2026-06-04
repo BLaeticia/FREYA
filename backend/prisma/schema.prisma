@@ -4,13 +4,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
   patient
   doctor
   admin
+  laboratory
 }
 
 enum AppointmentStatus {
@@ -66,13 +66,17 @@ model User {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt      @map("updated_at")
 
+  clinicId               String?  @map("clinic_id")
+
   doctor                 Doctor?
+  clinic                 Clinic?  @relation(fields: [clinicId], references: [id])
   patientProfile         PatientProfile?
   appointmentsAsPatient  Appointment[]   @relation("PatientAppointments")
   messagesSent           Message[]       @relation("SentMessages")
   conversationsAsPatient Conversation[]  @relation("PatientConversations")
   notifications          Notification[]
   reviews                Review[]
+  medicalRecords         MedicalRecord[] @relation("PatientMedicalRecords")
 
   @@map("users")
 }
@@ -120,8 +124,15 @@ model Clinic {
   email         String?
   description   String?
   specialites   String?
+  ratingAvg     Float    @default(0)  @map("rating_avg")
+  ratingCount   Int      @default(0)  @map("rating_count")
   adminApproved Boolean  @default(false) @map("admin_approved")
   createdAt     DateTime @default(now()) @map("created_at")
+
+  users          User[]
+  appointments   Appointment[]   @relation("ClinicAppointments")
+  medicalRecords MedicalRecord[] @relation("ClinicMedicalRecords")
+  reviews        Review[]        @relation("ClinicReviews")
 
   @@index([wilaya])
   @@map("clinics")
@@ -145,10 +156,12 @@ model Availability {
 
 model Appointment {
   id              String            @id @default(uuid())
-  doctorId        String            @map("doctor_id")
+  doctorId        String?           @map("doctor_id")
+  clinicId        String?           @map("clinic_id")
   patientId       String            @map("patient_id")
   appointmentDate DateTime          @map("appointment_date") @db.Date
   appointmentTime String            @map("appointment_time")
+  appointmentType String            @default("doctor") @map("appointment_type")
   status          AppointmentStatus @default(pending)
   motif           String?
   notes           String?
@@ -157,13 +170,15 @@ model Appointment {
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt      @map("updated_at")
 
-  doctor  Doctor          @relation("DoctorAppointments",  fields: [doctorId],  references: [id])
+  doctor  Doctor?         @relation("DoctorAppointments",  fields: [doctorId],  references: [id])
+  clinic  Clinic?         @relation("ClinicAppointments",  fields: [clinicId],  references: [id])
   patient User            @relation("PatientAppointments", fields: [patientId], references: [id])
   review  Review?
   records MedicalRecord[]
 
   @@unique([doctorId, appointmentDate, appointmentTime])
   @@index([patientId])
+  @@index([clinicId])
   @@index([appointmentDate])
   @@index([status])
   @@map("appointments")
@@ -204,7 +219,8 @@ model Message {
 model MedicalRecord {
   id            String     @id @default(uuid())
   patientId     String     @map("patient_id")
-  doctorId      String     @map("doctor_id")
+  doctorId      String?    @map("doctor_id")
+  clinicId      String?    @map("clinic_id")
   appointmentId String?    @map("appointment_id")
   recordType    RecordType @map("record_type")
   title         String
@@ -214,11 +230,14 @@ model MedicalRecord {
   filePath      String?    @map("file_path")
   createdAt     DateTime   @default(now()) @map("created_at")
 
-  doctor      Doctor       @relation(fields: [doctorId],      references: [id])
+  patient     User         @relation("PatientMedicalRecords", fields: [patientId],     references: [id])
+  doctor      Doctor?      @relation(fields: [doctorId],      references: [id])
+  clinic      Clinic?      @relation("ClinicMedicalRecords",  fields: [clinicId],      references: [id])
   appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   @@index([patientId])
   @@index([doctorId])
+  @@index([clinicId])
   @@map("medical_records")
 }
 
@@ -244,19 +263,22 @@ model PatientProfile {
 
 model Review {
   id            String   @id @default(uuid())
-  doctorId      String   @map("doctor_id")
+  doctorId      String?  @map("doctor_id")
+  clinicId      String?  @map("clinic_id")
   patientId     String   @map("patient_id")
-  appointmentId String   @unique @map("appointment_id")
+  appointmentId String?  @unique @map("appointment_id")
   rating        Int
   comment       String?
   isAnonymous   Boolean  @default(false) @map("is_anonymous")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  doctor      Doctor      @relation(fields: [doctorId],      references: [id])
-  patient     User        @relation(fields: [patientId],     references: [id])
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  doctor      Doctor?      @relation(fields: [doctorId],      references: [id])
+  clinic      Clinic?      @relation("ClinicReviews",         fields: [clinicId],      references: [id])
+  patient     User         @relation(fields: [patientId],     references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   @@index([doctorId])
+  @@index([clinicId])
   @@map("reviews")
 }
 

@@ -1,205 +1,176 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { messagesAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
+import PatientNavbar from '../../components/PatientNavbar';
 
-/* ─── Static demo conversations (replace with API calls if available) ─── */
-const DEMO_CONVERSATIONS = [
-  {
-    id: 0,
-    doctor: 'Dr. Amira Benali',
-    specialty: 'Cardiologue',
-    avatar: 'AB',
-    color: '#0D9488',
-    unread: 2,
-    online: true,
-    lastMessage: 'Bonjour, vos résultats sont bons.',
-    lastTime: '10:24',
-    messages: [
-      { from: 'doctor', text: 'Bonjour, comment vous sentez-vous après la dernière consultation ?', time: '09:10' },
-      { from: 'patient', text: 'Bonjour Docteur, je me sens beaucoup mieux merci !', time: '09:35' },
-      { from: 'doctor', text: "Parfait. J'ai reçu vos analyses. Tout est normal.", time: '10:00' },
-      { from: 'doctor', text: 'Bonjour, vos résultats sont bons. Continuez le traitement.', time: '10:24' },
-    ],
-  },
-  {
-    id: 1,
-    doctor: 'Dr. Karim Meziane',
-    specialty: 'Médecin généraliste',
-    avatar: 'KM',
-    color: '#2563EB',
-    unread: 0,
-    online: false,
-    lastMessage: 'RDV confirmé pour jeudi.',
-    lastTime: 'Hier',
-    messages: [
-      { from: 'patient', text: 'Bonjour Dr. Meziane, puis-je avoir un RDV cette semaine ?', time: 'Hier 14:00' },
-      { from: 'doctor', text: 'Bien sûr ! RDV confirmé pour jeudi 20 Mars à 14h00.', time: 'Hier 15:30' },
-    ],
-  },
-  {
-    id: 2,
-    doctor: 'Dr. Sonia Hadj',
-    specialty: 'Dermatologue',
-    avatar: 'SH',
-    color: '#7C3AED',
-    unread: 0,
-    online: false,
-    lastMessage: 'Merci pour votre visite.',
-    lastTime: '5 Fév',
-    messages: [
-      { from: 'doctor', text: 'Bonjour, suite à votre consultation, je vous prescris une crème.', time: '5 Fév 11:00' },
-      { from: 'patient', text: 'Merci beaucoup Docteur !', time: '5 Fév 11:30' },
-      { from: 'doctor', text: "Merci pour votre visite. N'hésitez pas si vous avez des questions.", time: '5 Fév 12:00' },
-    ],
-  },
-];
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+const SendIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+const MsgIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const SpinnerIcon = () => (
+  <div className="w-6 h-6 border-2 border-slate-200 border-t-primary-600 rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+);
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtConvTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'Hier';
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
 
 export default function PatientMessages() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState(DEMO_CONVERSATIONS);
-  const [activeConv, setActiveConv] = useState(0);
-  const [message, setMessage] = useState('');
-  const [search, setSearch] = useState('');
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const location = useLocation();
+
+  const [conversations, setConversations] = useState([]);
+  const [activeConv,    setActiveConv]    = useState(null);
+  const [messages,      setMessages]      = useState([]);
+  const [message,       setMessage]       = useState('');
+  const [search,        setSearch]        = useState('');
+  const [loadingConvs,  setLoadingConvs]  = useState(true);
+  const [sending,       setSending]       = useState(false);
+
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const inputRef       = useRef(null);
 
-  const firstName = user?.first_name || 'Patient';
-  const initials = `${user?.first_name?.[0] || 'P'}${user?.last_name?.[0] || ''}`.toUpperCase();
-  const conv = conversations[activeConv];
-  const totalUnread = conversations.reduce((a, c) => a + c.unread, 0);
+  /* ─── Charger les conversations ─── */
+  const loadConversations = useCallback(async () => {
+    try {
+      const res = await messagesAPI.getConversations();
+      setConversations(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setConversations([]);
+    } finally {
+      setLoadingConvs(false);
+    }
+  }, []);
 
-  const filteredConvs = conversations.filter(c =>
-    c.doctor.toLowerCase().includes(search.toLowerCase()) ||
-    c.specialty.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Auto-sélectionner la conversation après le chargement si convId passé en state
+  useEffect(() => {
+    const convId = location.state?.convId;
+    if (!convId || conversations.length === 0) return;
+    const target = conversations.find(c => c.id === convId);
+    if (target) setActiveConv(target);
+  }, [conversations, location.state]);
+
+  /* ─── Charger les messages d'une conversation ─── */
+  const loadMessages = useCallback(async (convId) => {
+    try {
+      const res = await messagesAPI.getMessages(convId);
+      setMessages(Array.isArray(res.data) ? res.data : []);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+    } catch {
+      setMessages([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeConv) {
+      loadMessages(activeConv.id);
+      // Marquer comme lu dans l'UI
+      setConversations(prev => prev.map(c =>
+        c.id === activeConv.id ? { ...c, _count: { messages: 0 } } : c
+      ));
+    }
+  }, [activeConv, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeConv, conversations]);
+  }, [messages]);
 
-  const handleSelectConv = (id) => {
-    setActiveConv(id);
-    // Mark as read
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, unread: 0 } : c));
-  };
-
-  const handleSend = () => {
-    if (!message.trim()) return;
-    const newMsg = { from: 'patient', text: message.trim(), time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
-    setConversations(prev => prev.map(c =>
-      c.id === activeConv
-        ? { ...c, messages: [...c.messages, newMsg], lastMessage: message.trim(), lastTime: newMsg.time }
-        : c
-    ));
+  /* ─── Envoyer un message ─── */
+  const handleSend = async () => {
+    if (!message.trim() || !activeConv) return;
+    const text = message.trim();
+    setSending(true);
     setMessage('');
-    toast.success('Message envoyé !', { duration: 1500 });
-    inputRef.current?.focus();
+    try {
+      const res = await messagesAPI.sendMessage(activeConv.id, text);
+      setMessages(prev => [...prev, res.data]);
+      setConversations(prev => prev.map(c =>
+        c.id === activeConv.id
+          ? { ...c, messages: [{ content: text, createdAt: new Date().toISOString() }] }
+          : c
+      ));
+    } catch {
+      toast.error("Erreur d'envoi");
+      setMessage(text);
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); toast.success('Déconnecté !'); };
+  /* ─── Filtrage conversations ─── */
+  const filtered = conversations.filter(c => {
+    const name = `${c.doctor?.user?.firstName || ''} ${c.doctor?.user?.lastName || ''}`.toLowerCase();
+    return name.includes(search.toLowerCase());
+  });
 
-  const navLinks = [
-    { id: 'accueil', label: 'Accueil', path: '/patient' },
-    { id: 'rdv', label: 'Mes rendez-vous', path: '/patient/appointments' },
-    { id: 'medecins', label: 'Trouver un médecin', path: '/doctors' },
-    { id: 'messages', label: 'Messages', path: '/patient/messages' },
-    { id: 'dossier', label: 'Dossier médical', path: '/patient/dossier' },
-  ];
+  const totalUnread = conversations.reduce((acc, c) => acc + (c._count?.messages || 0), 0);
+
+  /* ─── Helper: initiales médecin ─── */
+  const docInitials = (conv) => {
+    const f = conv.doctor?.user?.firstName || '';
+    const l = conv.doctor?.user?.lastName  || '';
+    return `${f[0] || ''}${l[0] || ''}`.toUpperCase() || 'Dr';
+  };
+  const docName = (conv) =>
+    `Dr. ${conv.doctor?.user?.firstName || ''} ${conv.doctor?.user?.lastName || ''}`.trim();
+
+  /* ─── Helper: sender du message ─── */
+  const isMine = (msg) => msg.senderId === user?.id;
 
   return (
-    <div style={css.root} onClick={() => setShowUserMenu(false)}>
+    <div className="font-sans bg-slate-50 h-screen flex flex-col overflow-hidden">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        .conv-item:hover { background-color: #F8FAFC !important; }
-        .nav-link:hover { background-color: #F1F5F9 !important; color: #0F172A !important; }
-        .action-btn:hover { background-color: #E2E8F0 !important; }
-        .send-btn:hover { opacity: 0.92; transform: translateY(-1px); }
-        .send-btn { transition: all 0.15s ease; }
-        .dropdown-item:hover { background-color: #F8FAFC; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .msg-animate { animation: fadeUp 0.2s ease; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes msgIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+        .msg-in { animation: msgIn 0.18s ease; }
       `}</style>
 
-      {/* ── NAVBAR ── */}
-      <nav style={css.navbar}>
-        <div style={css.navInner}>
-          <Link to="/" style={css.logo}>Frey<span style={css.logoAccent}>a</span></Link>
+      <PatientNavbar active="messages" />
 
-          <div style={css.navLinks}>
-            {navLinks.map(link => (
-              <Link
-                key={link.id}
-                to={link.path}
-                className="nav-link"
-                style={css.navLink(link.id === 'messages')}
-              >
-                {link.label}
-                {link.id === 'messages' && totalUnread > 0 && (
-                  <span style={css.navBadge}>{totalUnread}</span>
-                )}
-              </Link>
-            ))}
-          </div>
+      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-4 flex gap-4 overflow-hidden">
 
-          <div style={css.navRight}>
-            <button style={css.rdvBtn} onClick={() => navigate('/doctors')}>+ Prendre RDV</button>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={css.userBtn} onClick={() => setShowUserMenu(v => !v)}>
-                <div style={css.userAvatar}>{initials}</div>
-                <span style={css.userName}>{firstName}</span>
-                <span style={{ fontSize: '10px', color: '#94A3B8' }}>▼</span>
-              </div>
-              {showUserMenu && (
-                <div style={css.dropdown}>
-                  <div style={css.dropdownHeader}>
-                    <div style={css.dropdownName}>{firstName} {user?.last_name}</div>
-                    <div style={css.dropdownEmail}>{user?.email}</div>
-                  </div>
-                  {[
-                    { icon: '👤', label: 'Mon profil', path: '/patient/profile' },
-                    { icon: '📅', label: 'Mes rendez-vous', path: '/patient/appointments' },
-                  ].map((item, i) => (
-                    <div key={i} className="dropdown-item" style={css.dropdownItem} onClick={() => navigate(item.path)}>
-                      <span>{item.icon}</span>{item.label}
-                    </div>
-                  ))}
-                  <div style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <div className="dropdown-item" style={{ ...css.dropdownItem, color: '#EF4444' }} onClick={handleLogout}>
-                      <span>🚪</span> Déconnexion
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN LAYOUT ── */}
-      <div style={css.main}>
-
-        {/* ── LEFT: Conversation List ── */}
-        <aside style={css.sidebar}>
-          {/* Header */}
-          <div style={css.sidebarHeader}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={css.sidebarTitle}>💬 Messages</h2>
+        {/* Sidebar conversations */}
+        <aside className="w-72 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col shrink-0 overflow-hidden">
+          <div className="px-4 py-4 border-b border-slate-100 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900">Messages</h2>
               {totalUnread > 0 && (
-                <span style={css.unreadChip}>{totalUnread} non lu{totalUnread > 1 ? 's' : ''}</span>
+                <span className="text-[11px] font-bold bg-primary-50 text-primary-600 px-2.5 py-0.5 rounded-full">
+                  {totalUnread} non lu{totalUnread > 1 ? 's' : ''}
+                </span>
               )}
             </div>
-            {/* Search */}
-            <div style={css.searchWrap}>
-              <span style={css.searchIcon}>🔍</span>
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              <SearchIcon />
               <input
-                style={css.searchInput}
+                className="flex-1 border-none outline-none text-[13px] bg-transparent text-slate-900 placeholder-slate-400"
                 placeholder="Rechercher un médecin..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -207,198 +178,134 @@ export default function PatientMessages() {
             </div>
           </div>
 
-          {/* List */}
-          <div style={css.convScroll}>
-            {filteredConvs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94A3B8', fontSize: '13px' }}>
-                Aucun résultat
+          <div className="overflow-y-auto flex-1">
+            {loadingConvs ? (
+              <div className="flex justify-center p-8"><SpinnerIcon /></div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center px-4 py-8 text-slate-400 text-[13px]">
+                {conversations.length === 0
+                  ? 'Aucune conversation. Prenez un RDV pour commencer à échanger.'
+                  : 'Aucun résultat'}
               </div>
-            ) : filteredConvs.map(c => (
-              <div
-                key={c.id}
-                className="conv-item"
-                style={css.convItem(activeConv === c.id)}
-                onClick={() => handleSelectConv(c.id)}
-              >
-                <div style={css.convAvatarWrap}>
-                  <div style={css.convAvatar(c.color)}>{c.avatar}</div>
-                  {c.online && <div style={css.onlineDot} />}
-                </div>
-                <div style={css.convInfo}>
-                  <div style={css.convName}>{c.doctor}</div>
-                  <div style={css.convSpec}>{c.specialty}</div>
-                  <div style={css.convLast}>{c.lastMessage}</div>
-                </div>
-                <div style={css.convMeta}>
-                  <span style={css.convTime}>{c.lastTime}</span>
-                  {c.unread > 0 && <div style={css.unreadDot}>{c.unread}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        {/* ── RIGHT: Chat Area ── */}
-        <section style={css.chatArea}>
-          {/* Chat Header */}
-          <div style={css.chatHeader}>
-            <div style={css.chatAvatar(conv.color)}>{conv.avatar}</div>
-            <div style={{ flex: 1 }}>
-              <div style={css.chatDoctorName}>{conv.doctor}</div>
-              <div style={css.chatDoctorSpec}>
-                {conv.specialty}
-                {conv.online
-                  ? <span style={css.onlineLabel}>● En ligne</span>
-                  : <span style={css.offlineLabel}>● Hors ligne</span>}
-              </div>
-            </div>
-            <button className="action-btn" style={css.headerBtn} onClick={() => navigate('/patient/appointments')} title="Prendre RDV">
-              📅
-            </button>
-            <button className="action-btn" style={css.headerBtn} title="Appeler">
-              📞
-            </button>
-          </div>
-
-          {/* Messages */}
-          <div style={css.messagesArea}>
-            <div style={css.dateSep}>Aujourd'hui</div>
-            {conv.messages.map((msg, i) => {
-              const isPatient = msg.from === 'patient';
+            ) : filtered.map(c => {
+              const unread   = c._count?.messages || 0;
+              const isActive = activeConv?.id === c.id;
+              const lastMsg  = c.messages?.[0];
               return (
-                <div key={i} className="msg-animate" style={{ marginBottom: '12px' }}>
-                  <div style={css.msgRow(isPatient)}>
-                    {!isPatient && (
-                      <div style={css.msgAvatar(conv.color)}>{conv.avatar}</div>
-                    )}
-                    <div style={css.msgBubble(isPatient)}>{msg.text}</div>
+                <div
+                  key={c.id}
+                  onClick={() => setActiveConv(c)}
+                  className={`px-3.5 py-3 cursor-pointer flex items-center gap-2.5 border-l-[3px] transition-colors hover:bg-slate-50 ${
+                    isActive ? 'bg-primary-50 border-l-primary-600' : 'bg-transparent border-l-transparent'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-xs font-bold shrink-0">
+                    {docInitials(c)}
                   </div>
-                  <div style={css.msgTime(isPatient)}>{msg.time}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-bold text-slate-900 leading-none mb-0.5">{docName(c)}</div>
+                    <div className="text-[11px] text-slate-400 mb-1">{c.doctor?.specialite}</div>
+                    {lastMsg && (
+                      <div className="text-[12px] text-slate-500 truncate">{lastMsg.content}</div>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    {lastMsg && <span className="text-[11px] text-slate-400">{fmtConvTime(lastMsg.createdAt)}</span>}
+                    {unread > 0 && (
+                      <div className="bg-primary-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                        {unread}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
-            <div ref={messagesEndRef} />
           </div>
+        </aside>
 
-          {/* Input */}
-          <div style={css.inputArea}>
-            <button className="action-btn" style={css.attachBtn} title="Joindre un fichier">📎</button>
-            <input
-              ref={inputRef}
-              style={css.textInput}
-              placeholder={`Écrire à ${conv.doctor}...`}
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            />
-            <button
-              className="send-btn"
-              style={{ ...css.sendBtn, opacity: message.trim() ? 1 : 0.5 }}
-              onClick={handleSend}
-              disabled={!message.trim()}
-            >
-              Envoyer ↗
-            </button>
-          </div>
-        </section>
+        {/* Chat area */}
+        {activeConv ? (
+          <section className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-3 shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-xs font-bold shrink-0">
+                {docInitials(activeConv)}
+              </div>
+              <div className="flex-1">
+                <div className="text-[15px] font-bold text-slate-900">{docName(activeConv)}</div>
+                <div className="text-[12px] text-slate-500">{activeConv.doctor?.specialite}</div>
+              </div>
+              <button
+                onClick={() => navigate('/patient/appointments')}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
+                Mes rendez-vous
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 px-6 py-5 overflow-y-auto flex flex-col bg-slate-50/50">
+              {messages.length === 0 && (
+                <div className="text-center text-[12px] text-slate-400 my-auto">
+                  Aucun message. Commencez la conversation.
+                </div>
+              )}
+              {messages.map((msg, i) => {
+                const mine = isMine(msg);
+                return (
+                  <div key={msg.id || i} className="mb-3 msg-in">
+                    <div className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+                      {!mine && (
+                        <div className="w-6 h-6 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center text-[9px] font-bold shrink-0 mb-0.5">
+                          {msg.sender?.firstName?.[0] || 'D'}
+                        </div>
+                      )}
+                      <div className={`max-w-[58%] px-4 py-2.5 text-sm leading-relaxed ${
+                        mine
+                          ? 'bg-primary-600 text-white rounded-2xl rounded-br-sm'
+                          : 'bg-white text-slate-900 rounded-2xl rounded-bl-sm border border-slate-200'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                    <div className={`text-[10px] text-slate-400 mt-1 ${mine ? 'text-right' : 'text-left pl-8'}`}>
+                      {fmtTime(msg.createdAt)}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-2.5 shrink-0">
+              <input
+                ref={inputRef}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 outline-none font-sans placeholder-slate-400 focus:border-primary-300 transition-colors"
+                placeholder={`Écrire à ${docName(activeConv)}...`}
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!message.trim() || sending}
+                className={`flex items-center gap-1.5 bg-primary-600 text-white border-0 rounded-xl px-4 py-2.5 text-[13px] font-semibold cursor-pointer shrink-0 font-sans hover:bg-primary-700 transition-colors ${(!message.trim() || sending) ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                <SendIcon /> {sending ? 'Envoi...' : 'Envoyer'}
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col items-center justify-center gap-3">
+            <MsgIcon />
+            <p className="text-slate-600 font-semibold text-[15px]">Sélectionnez une conversation</p>
+            <p className="text-slate-400 text-sm text-center max-w-xs">
+              Choisissez un médecin dans la liste pour commencer à échanger.
+            </p>
+          </section>
+        )}
       </div>
     </div>
   );
 }
-
-/* ─────────────────────── STYLES ─────────────────────── */
-const css = {
-  root: {
-    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    backgroundColor: '#F0F9F8',
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-
-  /* Navbar */
-  navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.05)', flexShrink: 0 },
-  navInner: { maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', gap: '20px' },
-  logo: { fontSize: '22px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px', textDecoration: 'none', flexShrink: 0 },
-  logoAccent: { color: '#F97316' },
-  navLinks: { display: 'flex', gap: '2px', flex: 1 },
-  navLink: (active) => ({
-    padding: '7px 13px', borderRadius: '8px', fontSize: '13.5px',
-    fontWeight: active ? '700' : '500',
-    color: active ? '#0D9488' : '#64748B',
-    backgroundColor: active ? '#CCFBF1' : 'transparent',
-    textDecoration: 'none', whiteSpace: 'nowrap',
-    display: 'flex', alignItems: 'center', gap: '6px',
-    transition: 'all 0.15s',
-  }),
-  navBadge: { backgroundColor: '#EF4444', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '10px' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
-  rdvBtn: { background: 'linear-gradient(135deg, #0D9488, #065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '9px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' },
-  userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 11px 5px 5px', borderRadius: '10px', border: '1.5px solid #E2E8F0', cursor: 'pointer', backgroundColor: '#fff' },
-  userAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg, #0D9488, #065F52)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff' },
-  userName: { fontSize: '13px', fontWeight: '600', color: '#0F172A' },
-  dropdown: { position: 'absolute', top: '50px', right: 0, backgroundColor: '#fff', borderRadius: '14px', border: '1.5px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0,0,0,0.10)', minWidth: '210px', zIndex: 300, overflow: 'hidden' },
-  dropdownHeader: { padding: '14px 16px', borderBottom: '1px solid #F1F5F9' },
-  dropdownName: { fontSize: '14px', fontWeight: '700', color: '#0F172A' },
-  dropdownEmail: { fontSize: '12px', color: '#94A3B8', marginTop: '2px' },
-  dropdownItem: { padding: '11px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: '#0F172A', transition: 'background 0.1s' },
-
-  /* Layout */
-  main: { flex: 1, maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '20px 32px', display: 'flex', gap: '18px', overflow: 'hidden', boxSizing: 'border-box' },
-
-  /* Sidebar */
-  sidebar: { width: '310px', backgroundColor: '#fff', borderRadius: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', border: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden' },
-  sidebarHeader: { padding: '18px 16px 12px', borderBottom: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: '10px' },
-  sidebarTitle: { fontSize: '16px', fontWeight: '800', color: '#0F172A' },
-  unreadChip: { fontSize: '11px', fontWeight: '700', backgroundColor: '#CCFBF1', color: '#0D9488', padding: '3px 9px', borderRadius: '20px' },
-  searchWrap: { position: 'relative' },
-  searchIcon: { position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px' },
-  searchInput: { width: '100%', padding: '9px 12px 9px 32px', borderRadius: '10px', border: '1.5px solid #E2E8F0', fontSize: '13px', outline: 'none', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'inherit' },
-  convScroll: { overflowY: 'auto', flex: 1 },
-  convItem: (active) => ({
-    padding: '13px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '11px',
-    backgroundColor: active ? '#F0FDF9' : 'transparent',
-    borderLeft: active ? '3px solid #0D9488' : '3px solid transparent',
-    transition: 'all 0.15s',
-  }),
-  convAvatarWrap: { position: 'relative', flexShrink: 0 },
-  convAvatar: (color) => ({ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700' }),
-  onlineDot: { position: 'absolute', bottom: '-1px', right: '-1px', width: '11px', height: '11px', borderRadius: '50%', backgroundColor: '#22C55E', border: '2px solid #fff' },
-  convInfo: { flex: 1, minWidth: 0 },
-  convName: { fontSize: '13px', fontWeight: '700', color: '#0F172A', marginBottom: '1px' },
-  convSpec: { fontSize: '11px', color: '#94A3B8', marginBottom: '3px' },
-  convLast: { fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  convMeta: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 },
-  convTime: { fontSize: '11px', color: '#94A3B8' },
-  unreadDot: { backgroundColor: '#0D9488', color: '#fff', fontSize: '10px', fontWeight: '700', minWidth: '18px', height: '18px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' },
-
-  /* Chat */
-  chatArea: { flex: 1, backgroundColor: '#fff', borderRadius: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', border: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  chatHeader: { padding: '16px 22px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: '13px', flexShrink: 0, backgroundColor: '#FAFFFE' },
-  chatAvatar: (color) => ({ width: '46px', height: '46px', borderRadius: '13px', backgroundColor: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', flexShrink: 0 }),
-  chatDoctorName: { fontSize: '15px', fontWeight: '800', color: '#0F172A' },
-  chatDoctorSpec: { fontSize: '12px', color: '#64748B', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' },
-  onlineLabel: { color: '#16A34A', fontWeight: '600', fontSize: '11px' },
-  offlineLabel: { color: '#94A3B8', fontWeight: '500', fontSize: '11px' },
-  headerBtn: { backgroundColor: '#F1F5F9', border: 'none', borderRadius: '9px', padding: '9px 12px', fontSize: '16px', cursor: 'pointer', transition: 'background 0.15s' },
-
-  messagesArea: { flex: 1, padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', backgroundColor: '#FAFFFE' },
-  dateSep: { textAlign: 'center', fontSize: '11px', color: '#94A3B8', marginBottom: '16px', fontWeight: '600', letterSpacing: '0.3px' },
-  msgRow: (isPatient) => ({ display: 'flex', justifyContent: isPatient ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: '8px' }),
-  msgAvatar: (color) => ({ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700', flexShrink: 0, marginBottom: '2px' }),
-  msgBubble: (isPatient) => ({
-    maxWidth: '58%', padding: '10px 15px', lineHeight: '1.55', fontSize: '14px',
-    borderRadius: isPatient ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-    backgroundColor: isPatient ? '#0D9488' : '#fff',
-    color: isPatient ? '#fff' : '#0F172A',
-    boxShadow: isPatient ? '0 2px 8px rgba(13,148,136,0.25)' : '0 1px 3px rgba(0,0,0,0.07)',
-    border: isPatient ? 'none' : '1px solid #E2E8F0',
-  }),
-  msgTime: (isPatient) => ({ fontSize: '10px', color: '#94A3B8', marginTop: '4px', textAlign: isPatient ? 'right' : 'left', paddingLeft: isPatient ? 0 : '34px' }),
-
-  inputArea: { padding: '14px 18px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0, backgroundColor: '#fff' },
-  attachBtn: { backgroundColor: '#F1F5F9', color: '#64748B', border: 'none', borderRadius: '10px', padding: '10px 13px', fontSize: '16px', cursor: 'pointer', flexShrink: 0 },
-  textInput: { flex: 1, padding: '11px 16px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', backgroundColor: '#F8FAFC', fontFamily: 'inherit', color: '#0F172A', transition: 'border-color 0.15s' },
-  sendBtn: { background: 'linear-gradient(135deg, #0D9488, #065F52)', color: '#fff', border: 'none', borderRadius: '12px', padding: '11px 22px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', flexShrink: 0, letterSpacing: '0.2px' },
-};

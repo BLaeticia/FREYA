@@ -1,30 +1,28 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-export { default as PatientDashboard } from './patient/PatientDashboard';
-export function PatientAppointments() {
-  return <div>Patient Appointments - En cours de développement</div>;
+const ClockIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+
+function StubPage({ title, back, backLabel }) {
+  return (
+    <div style={{ fontFamily: "'Inter','DM Sans',sans-serif", backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+      <ClockIcon />
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A', marginBottom: '8px', letterSpacing: '-0.3px' }}>{title}</h2>
+        <p style={{ fontSize: '14px', color: '#64748B' }}>Cette section est en cours de développement.</p>
+      </div>
+      {back && (
+        <Link to={back} style={{ backgroundColor: '#2563EB', color: '#fff', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+          {backLabel || 'Retour'}
+        </Link>
+      )}
+    </div>
+  );
 }
-export function PatientMessages() {
-  return <div>Patient Messages - En cours de développement</div>;
-}
-export function PatientDossier() {
-  return <div>Patient Dossier - En cours de développement</div>;
-}
-export function PatientProfile() {
-  return <div>Patient Profile - En cours de développement</div>;
-}
-export function DoctorAppointments() {
-  return <div>Doctor Appointments - En cours de développement</div>;
-}
-export function DoctorPatients() {
-  return <div>Doctor Patients - En cours de développement</div>;
-}
-export function DoctorProfile() {
-  return <div>Doctor Profile - En cours de développement</div>;
-}
-export function DoctorAvailability() {
-  return <div>Doctor Availability - En cours de développement</div>;
-}
-export function AdminClinics() {
-  return <div>Admin Clinics - En cours de développement</div>;
-}
+
+export function DoctorProfile()  { return <StubPage title="Profil médecin"        back="/doctor" backLabel="Retour au tableau de bord" />; }
+export function AdminClinics()   { return <StubPage title="Gestion des cliniques" back="/admin"  backLabel="Retour au tableau de bord" />; }

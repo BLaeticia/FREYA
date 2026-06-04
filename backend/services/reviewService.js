@@ -1,22 +1,36 @@
 const prisma = require('../prisma/client');
 
-// ─── Ajouter un avis ──────────────────────────────────────────────────────────
-const addReview = async (patientId, { doctorId, appointmentId, rating, comment, isAnonymous }) => {
+// ─── Ajouter un avis (médecin ou laboratoire) ─────────────────────────────────
+const addReview = async (patientId, { doctorId, clinicId, appointmentId, rating, comment, isAnonymous }) => {
   if (rating < 1 || rating > 5) throw { status: 400, message: 'La note doit être entre 1 et 5.' };
+  if (!doctorId && !clinicId) throw { status: 400, message: 'doctorId ou clinicId requis.' };
 
-  const appt = await prisma.appointment.findFirst({ where: { id: appointmentId, patientId, status: 'completed' } });
-  if (!appt) throw { status: 403, message: 'Vous ne pouvez noter qu\'un rendez-vous terminé.' };
+  if (appointmentId) {
+    const appt = await prisma.appointment.findFirst({ where: { id: appointmentId, patientId, status: 'completed' } });
+    if (!appt) throw { status: 403, message: "Vous ne pouvez noter qu'un rendez-vous terminé." };
+  }
 
   const review = await prisma.review.create({
-    data: { doctorId, patientId, appointmentId, rating, comment, isAnonymous: !!isAnonymous }
+    data: {
+      doctorId:     doctorId     || null,
+      clinicId:     clinicId     || null,
+      patientId,
+      appointmentId: appointmentId || null,
+      rating,
+      comment,
+      isAnonymous: !!isAnonymous
+    }
   });
 
-  // Recalculer la note moyenne du médecin
-  const { _avg, _count } = await prisma.review.aggregate({ where: { doctorId }, _avg: { rating: true }, _count: true });
-  await prisma.doctor.update({
-    where: { id: doctorId },
-    data: { ratingAvg: Math.round((_avg.rating || 0) * 10) / 10, ratingCount: _count }
-  });
+  if (doctorId) {
+    const { _avg, _count } = await prisma.review.aggregate({ where: { doctorId }, _avg: { rating: true }, _count: true });
+    await prisma.doctor.update({ where: { id: doctorId }, data: { ratingAvg: Math.round((_avg.rating || 0) * 10) / 10, ratingCount: _count } });
+  }
+
+  if (clinicId) {
+    const { _avg, _count } = await prisma.review.aggregate({ where: { clinicId }, _avg: { rating: true }, _count: true });
+    await prisma.clinic.update({ where: { id: clinicId }, data: { ratingAvg: Math.round((_avg.rating || 0) * 10) / 10, ratingCount: _count } });
+  }
 
   return { message: 'Avis publié. Merci !', reviewId: review.id };
 };
@@ -24,21 +38,25 @@ const addReview = async (patientId, { doctorId, appointmentId, rating, comment, 
 // ─── Avis d'un médecin ────────────────────────────────────────────────────────
 const getDoctorReviews = async (doctorId) => {
   const [reviews, doctor] = await Promise.all([
-    prisma.review.findMany({
-      where: { doctorId },
-      orderBy: { createdAt: 'desc' },
-      include: { patient: { select: { firstName: true, lastName: true } } }
-    }),
+    prisma.review.findMany({ where: { doctorId }, orderBy: { createdAt: 'desc' }, include: { patient: { select: { firstName: true, lastName: true } } } }),
     prisma.doctor.findUnique({ where: { id: doctorId }, select: { ratingAvg: true, ratingCount: true } })
   ]);
-
-  // Masquer le nom si anonyme
-  const sanitized = reviews.map(r => ({
-    ...r,
-    patient: r.isAnonymous ? { firstName: 'Anonyme', lastName: '' } : r.patient
-  }));
-
-  return { reviews: sanitized, summary: doctor };
+  return { reviews: reviews.map(r => ({ ...r, patient: r.isAnonymous ? { firstName: 'Anonyme', lastName: '' } : r.patient })), summary: doctor };
 };
 
-module.exports = { addReview, getDoctorReviews };
+// ─── Avis d'un laboratoire ────────────────────────────────────────────────────
+const getClinicReviews = async (clinicId) => {
+  const [reviews, clinic] = await Promise.all([
+    prisma.review.findMany({ where: { clinicId }, orderBy: { createdAt: 'desc' }, include: { patient: { select: { firstName: true, lastName: true } } } }),
+    prisma.clinic.findUnique({ where: { id: clinicId }, select: { ratingAvg: true, ratingCount: true, name: true } })
+  ]);
+  return { reviews: reviews.map(r => ({ ...r, patient: r.isAnonymous ? { firstName: 'Anonyme', lastName: '' } : r.patient })), summary: clinic };
+};
+
+// ─── Vérifier si déjà noté ────────────────────────────────────────────────────
+const hasReviewed = async (patientId, appointmentId) => {
+  if (!appointmentId) return false;
+  return !!(await prisma.review.findFirst({ where: { patientId, appointmentId } }));
+};
+
+module.exports = { addReview, getDoctorReviews, getClinicReviews, hasReviewed };

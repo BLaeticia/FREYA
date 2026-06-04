@@ -107,6 +107,6 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
 
 // ─── Utilitaire ───────────────────────────────────────────────────────────────
 const _signToken = (id, role) =>
-  jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+  jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION_IN || '7d' });
 
 module.exports = { registerPatient, registerDoctor, login, getMe, updateProfile, changePassword };

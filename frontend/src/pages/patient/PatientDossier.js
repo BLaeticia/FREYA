@@ -1,379 +1,342 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
-import api from '../../services/api';
+import { recordsAPI } from '../../services/api';
+import PatientNavbar from '../../components/PatientNavbar';
+
+const EditIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const SaveIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+    <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+  </svg>
+);
+const FolderIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const TYPE_INFO = {
+  consultation: { label: 'Consultation', cls: 'bg-primary-100 text-primary-800', dot: 'bg-primary-500' },
+  ordonnance:   { label: 'Ordonnance',   cls: 'bg-violet-100 text-violet-800',   dot: 'bg-violet-500'  },
+  analyse:      { label: 'Analyse',      cls: 'bg-green-100  text-green-800',    dot: 'bg-green-500'   },
+  radio:        { label: 'Imagerie',     cls: 'bg-amber-100  text-amber-800',    dot: 'bg-amber-500'   },
+  autre:        { label: 'Autre',        cls: 'bg-slate-100  text-slate-600',    dot: 'bg-slate-400'   },
+};
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 const TABS = [
-  { id: 'info', label: '👤 Informations' },
-  { id: 'consultations', label: '🩺 Consultations' },
-  { id: 'ordonnances', label: '💊 Ordonnances' },
-  { id: 'analyses', label: '🔬 Analyses' },
+  { id: 'info',          label: 'Informations'  },
+  { id: 'consultations', label: 'Consultations' },
+  { id: 'ordonnances',   label: 'Ordonnances'   },
+  { id: 'analyses',      label: 'Analyses'      },
 ];
 
 export default function PatientDossier() {
-  const { user, logout, updateUser } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('info');
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
-  // ── CLEF DE STOCKAGE UNIQUE PAR UTILISATEUR ──
-  const storageKey = `freya_patient_info_${user?.id || user?.email || 'default'}`;
-
-  // ── CHARGEMENT INITIAL DEPUIS localStorage ──
-  const loadSaved = () => {
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || '{}');
-    } catch { return {}; }
-  };
-
-  const firstName = user?.firstName || user?.first_name || 'Patient';
-  const lastName = user?.lastName || user?.last_name || '';
-  const fullName = `${firstName} ${lastName}`;
-  const initials = `${firstName[0] || 'P'}${lastName[0] || ''}`.toUpperCase();
-
-  const birthDate = user?.birthDate || user?.birth_date;
-  const age = birthDate
-    ? new Date().getFullYear() - new Date(birthDate).getFullYear()
-    : '--';
-
-  // ── ÉTAT DES INFORMATIONS ÉDITABLES ──
-  const [editData, setEditData] = useState(() => {
-    const saved = loadSaved();
-    return {
-      phone: saved.phone || user?.phone || '',
-      birthDate: saved.birthDate || birthDate || '',
-      bloodGroup: saved.bloodGroup || user?.bloodGroup || 'A+',
-      insurance: saved.insurance || user?.insurance || 'CNAS',
-      ssn: saved.ssn || user?.ssn || '',
-      address: saved.address || user?.address || '',
-    };
+  const [records,   setRecords]   = useState([]);
+  const [profile,   setProfile]   = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [tempData,  setTempData]  = useState({
+    phone: '', birthDate: '', bloodGroup: 'A+', insurance: 'CNAS',
+    height: '', weight: '', allergies: '', chronicDiseases: ''
   });
 
-  // ── ÉTAT TEMPORAIRE PENDANT L'ÉDITION ──
-  const [tempData, setTempData] = useState({ ...editData });
+  const firstName = user?.firstName || 'Patient';
+  const lastName  = user?.lastName  || '';
+  const initials  = `${firstName[0] || 'P'}${lastName[0] || ''}`.toUpperCase();
 
-  // ── RECHARGEMENT SI L'UTILISATEUR CHANGE ──
-  useEffect(() => {
-    const saved = loadSaved();
-    setEditData(prev => ({
-      phone: saved.phone || user?.phone || prev.phone,
-      birthDate: saved.birthDate || birthDate || prev.birthDate,
-      bloodGroup: saved.bloodGroup || user?.bloodGroup || prev.bloodGroup,
-      insurance: saved.insurance || user?.insurance || prev.insurance,
-      ssn: saved.ssn || user?.ssn || prev.ssn,
-      address: saved.address || user?.address || prev.address,
-    }));
-  }, [user?.id]);
+  const load = useCallback(async () => {
+    try {
+      const res = await recordsAPI.getRecords();
+      const data = res.data;
+      setRecords(Array.isArray(data.records) ? data.records : []);
+      if (data.profile) {
+        const p = data.profile;
+        setProfile(p);
+        setTempData({
+          phone:           user?.phone || '',
+          birthDate:       p.dateOfBirth  ? p.dateOfBirth.split('T')[0] : '',
+          bloodGroup:      p.bloodType    || 'A+',
+          insurance:       'CNAS',
+          height:          p.height       ? String(p.height) : '',
+          weight:          p.weight       ? String(p.weight) : '',
+          allergies:       p.allergies    || '',
+          chronicDiseases: p.chronicDiseases || '',
+        });
+      }
+    } catch {
+      toast.error('Erreur de chargement du dossier');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.phone]);
 
-  const handleEditStart = () => {
-    setTempData({ ...editData });
-    setIsEditing(true);
-  };
+  useEffect(() => { load(); }, [load]);
 
-  const handleCancel = () => {
-    setTempData({ ...editData });
-    setIsEditing(false);
-  };
+  const consultations = records.filter(r => r.recordType === 'consultation');
+  const ordonnances   = records.filter(r => r.recordType === 'ordonnance');
+  const analyses      = records.filter(r => r.recordType === 'analyse' || r.recordType === 'radio');
 
   const handleSave = async () => {
+    setSaving(true);
     try {
-      //on envoie les donnees au serveur dur la route existante
-      await api.put('/records/profile', tempData);
-      // Si le serveur répond OK, on met à jour le store global
-      updateUser({ ...user, ...tempData });
-      
-      localStorage.setItem(storageKey, JSON.stringify(tempData))
-      setEditData({ ...tempData });
+      await recordsAPI.updateProfile(tempData);
+      updateUser({ ...user, phone: tempData.phone });
       setIsEditing(false);
-      toast.success('Informations mises à jour  :) !');
-    } catch (error){
-      console.error("Erreur API:", error);
-      toast.error("Le serveur n'a pas pu enregistrer les modifications"); 
+      toast.success('Informations mises à jour');
+      load();
+    } catch {
+      toast.error("Erreur lors de l'enregistrement");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleChange = (field, value) => {
-    setTempData(prev => ({ ...prev, [field]: value }));
+  const inputCls = "w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 outline-none font-sans focus:border-primary-400 transition-colors";
+
+  const RecordCard = ({ rec }) => {
+    const ti = TYPE_INFO[rec.recordType] || TYPE_INFO.autre;
+    const source = rec.doctor
+      ? `Dr. ${rec.doctor.user?.firstName} ${rec.doctor.user?.lastName}`
+      : rec.clinic?.name || '—';
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-card hover:border-primary-200 transition-colors">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${ti.dot}`} />
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${ti.cls}`}>{ti.label}</span>
+          </div>
+          <span className="text-[11px] text-slate-400">{fmtDate(rec.createdAt)}</span>
+        </div>
+        <h3 className="text-sm font-bold text-slate-900 mb-1">{rec.title}</h3>
+        <p className="text-[12px] text-primary-600 font-semibold mb-2">{source}</p>
+        {rec.description && (
+          <p className="text-[13px] text-slate-600 leading-relaxed bg-slate-50 rounded-lg px-3 py-2 mb-2">{rec.description}</p>
+        )}
+        {rec.diagnosis && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-2">
+            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wide mb-0.5">Diagnostic</div>
+            <p className="text-[13px] text-blue-800">{rec.diagnosis}</p>
+          </div>
+        )}
+        {rec.prescription && (
+          <div className="bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+            <div className="text-[10px] font-bold text-violet-500 uppercase tracking-wide mb-0.5">Ordonnance</div>
+            <p className="text-[13px] text-violet-800 whitespace-pre-line">{rec.prescription}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    toast.success('Déconnecté avec succès');
-  };
+  const EmptyTab = ({ msg }) => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col items-center py-16 gap-3">
+      <FolderIcon />
+      <p className="text-slate-500 font-semibold text-sm">{msg}</p>
+      <p className="text-slate-400 text-xs">Les documents apparaîtront ici automatiquement</p>
+    </div>
+  );
 
-  const navLinks = [
-    { id: 'accueil', label: 'Accueil', path: '/patient' },
-    { id: 'rdv', label: 'Mes rendez-vous', path: '/patient/appointments' },
-    { id: 'medecins', label: 'Trouver un médecin', path: '/doctors' },
-    { id: 'dossier', label: 'Dossier médical', path: '/patient/dossier' },
-  ];
+  if (loading) return (
+    <div className="font-sans bg-slate-50 min-h-screen flex items-center justify-center flex-col gap-4">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="w-8 h-8 border-[3px] border-slate-200 border-t-primary-600 rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+      <p className="text-slate-400 text-sm">Chargement du dossier...</p>
+    </div>
+  );
 
-  if (!user) return <div style={{ padding: '50px', textAlign: 'center' }}>Chargement du profil...</div>;
-
-  // ── Données à afficher (mode lecture) ──
-  const displayAge = editData.birthDate
-    ? new Date().getFullYear() - new Date(editData.birthDate).getFullYear()
-    : age;
+  const displayAge = tempData.birthDate
+    ? new Date().getFullYear() - new Date(tempData.birthDate).getFullYear()
+    : null;
 
   return (
-    <div style={s.root} onClick={() => setShowUserMenu(false)}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        .nav-link:hover { background-color: #F1F5F9 !important; }
-        .dropdown-item:hover { background-color: #F8FAFC; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .fade-up { animation: fadeUp 0.25s ease; }
-        .edit-input { width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #E2E8F0; border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: #0F172A; background: #F8FAFC; transition: border-color 0.2s; }
-        .edit-input:focus { outline: none; border-color: #0D9488; background: #fff; }
-        .edit-input:hover { border-color: #CBD5E1; }
-      `}</style>
+    <div className="font-sans bg-slate-50 min-h-screen">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <PatientNavbar active="dossier" />
 
-      {/* ── NAVBAR ── */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <Link to="/" style={s.logo}>Frey<span style={s.logoAccent}>a</span></Link>
-          <div style={s.navLinks}>
-            {navLinks.map(link => (
-              <Link key={link.id} to={link.path} className="nav-link" style={s.navLink(link.id === 'dossier')}>
-                {link.label}
-              </Link>
+      <div className="max-w-5xl mx-auto px-6 py-7">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-slate-900 tracking-tight mb-1">
+              <FolderIcon /> Dossier Médical
+            </h1>
+            <p className="text-sm text-slate-500">Consultez et gérez vos informations de santé</p>
+          </div>
+        </div>
+
+        {/* Bannière patient */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 flex items-center gap-5 mb-5">
+          <div className="w-14 h-14 rounded-xl bg-primary-600 flex items-center justify-center text-xl font-extrabold text-white shrink-0">
+            {initials}
+          </div>
+          <div className="flex-1">
+            <div className="text-lg font-extrabold text-slate-900">{firstName} {lastName}</div>
+            <div className="text-sm text-slate-500 mt-0.5">
+              {displayAge ? `${displayAge} ans · ` : ''}
+              {tempData.bloodGroup ? `Groupe ${tempData.bloodGroup} · ` : ''}
+              {tempData.insurance || 'CNAS'}
+            </div>
+          </div>
+          <div className="flex gap-6 shrink-0 text-center">
+            {[
+              { val: consultations.length, label: 'Consultations' },
+              { val: ordonnances.length,   label: 'Ordonnances'   },
+              { val: analyses.length,      label: 'Analyses'      },
+            ].map((s, i) => (
+              <div key={i}>
+                <div className="text-2xl font-extrabold text-primary-600">{s.val}</div>
+                <div className="text-[11px] text-slate-400">{s.label}</div>
+              </div>
             ))}
           </div>
-          <div style={s.navRight}>
-            <button style={s.rdvBtn} onClick={() => navigate('/doctors')}>+ Prendre RDV</button>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={s.userBtn} onClick={() => setShowUserMenu(v => !v)}>
-                <div style={s.userAvatar}>{initials}</div>
-                <span style={s.userName}>{firstName}</span>
-                <span style={{ fontSize: '10px', color: '#94A3B8' }}>▼</span>
-              </div>
-              {showUserMenu && (
-                <div style={s.dropdown}>
-                  <div style={s.dropdownHeader}>
-                    <div style={s.dropdownName}>{fullName}</div>
-                    <div style={s.dropdownEmail}>{user?.email}</div>
-                  </div>
-                  <div className="dropdown-item" style={{ ...s.dropdownItem, color: '#EF4444' }} onClick={handleLogout}>
-                    <span>🚪</span> Déconnexion
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN ── */}
-      <div style={s.main}>
-        <div style={s.pageHeader}>
-          <div>
-            <h1 style={s.pageTitle}>🗂️ Dossier Médical</h1>
-            <p style={s.pageSubtitle}>Consultez et gérez vos informations de santé</p>
-          </div>
-          <button style={s.exportBtn} onClick={() => toast.success('Génération du PDF...')}>⬇ Exporter PDF</button>
         </div>
 
-        {/* Bannière Patient */}
-        <div style={s.banner}>
-          <div style={s.bannerAvatar}>{initials}</div>
-          <div style={{ flex: 1 }}>
-            <div style={s.bannerName}>{fullName}</div>
-            <div style={s.bannerMeta}>
-              {displayAge} ans · {user?.gender === 'M' ? 'Masculin' : 'Féminin'} · Groupe : <strong>{editData.bloodGroup}</strong> · {editData.insurance}
-            </div>
-          </div>
-          <div style={s.bannerStats}>
-            <div style={s.bannerStat}>
-              <div style={s.bannerStatVal}>1</div>
-              <div style={s.bannerStatLabel}>Consultations</div>
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="flex gap-1.5 mb-5 flex-wrap">
+          {TABS.map(tab => {
+            const count = tab.id === 'consultations' ? consultations.length
+              : tab.id === 'ordonnances' ? ordonnances.length
+              : tab.id === 'analyses' ? analyses.length : null;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer border-0 font-sans ${
+                  activeTab === tab.id ? 'bg-primary-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:border-primary-300'
+                }`}
+              >
+                {tab.label}
+                {count !== null && count > 0 && (
+                  <span className={`ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full font-bold ${
+                    activeTab === tab.id ? 'bg-white/25 text-white' : 'bg-primary-100 text-primary-600'
+                  }`}>{count}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Onglets */}
-        <div style={s.tabs}>
-          {TABS.map(tab => (
-            <button key={tab.id} style={s.tab(activeTab === tab.id)} onClick={() => setActiveTab(tab.id)}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── CONTENU DES ONGLETS ── */}
-        <div className="fade-up">
-          {activeTab === 'info' && (
-            <div style={s.grid2}>
-              {/* ── CARTE INFORMATIONS PERSONNELLES ── */}
-              <div style={s.card}>
-                <h3 style={s.cardTitle}>👤 Informations personnelles</h3>
-
+        {/* ─── Onglet INFO ─── */}
+        {activeTab === 'info' && (
+          <div className="grid grid-cols-2 gap-5">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-900">Informations personnelles</h3>
                 {!isEditing ? (
-                  /* ── MODE LECTURE ── */
-                  <>
-                    <div style={s.infoGrid}>
-                      {[
-                        { label: 'Date de naissance', val: editData.birthDate || 'Non renseignée' },
-                        { label: 'Email', val: user?.email },
-                        { label: 'Téléphone', val: editData.phone || 'Non renseigné' },
-                        { label: 'Groupe sanguin', val: editData.bloodGroup },
-                        { label: 'N° Sécurité sociale', val: editData.ssn || '---' },
-                        { label: 'Mutuelle', val: editData.insurance },
-                      ].map((item, i) => (
-                        <div key={i} style={s.infoItem}>
-                          <div style={s.infoLabel}>{item.label}</div>
-                          <div style={s.infoVal}>{item.val}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* BOUTON EN BAS */}
-                    <div style={s.btnRow}>
-                      <button style={s.editBtn} onClick={handleEditStart}>
-                        ✏️ Modifier mes informations
-                      </button>
-                    </div>
-                  </>
+                  <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 text-primary-600 border border-primary-200 rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-primary-50 transition-colors cursor-pointer bg-transparent font-sans">
+                    <EditIcon /> Modifier
+                  </button>
                 ) : (
-                  /* ── MODE ÉDITION ── */
-                  <>
-                    <div style={s.infoGrid}>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>Date de naissance</div>
-                        <input
-                          className="edit-input"
-                          type="date"
-                          value={tempData.birthDate}
-                          onChange={e => handleChange('birthDate', e.target.value)}
-                        />
-                      </div>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>Email</div>
-                        <div style={{ ...s.infoVal, color: '#94A3B8', fontStyle: 'italic', fontSize: '12px' }}>
-                          {user?.email} <span style={{ fontSize: '10px' }}>(non modifiable)</span>
-                        </div>
-                      </div>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>Téléphone</div>
-                        <input
-                          className="edit-input"
-                          type="tel"
-                          placeholder="0551227056"
-                          value={tempData.phone}
-                          onChange={e => handleChange('phone', e.target.value)}
-                        />
-                      </div>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>Groupe sanguin</div>
-                        <select
-                          className="edit-input"
-                          value={tempData.bloodGroup}
-                          onChange={e => handleChange('bloodGroup', e.target.value)}
-                        >
-                          {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>N° Sécurité sociale</div>
-                        <input
-                          className="edit-input"
-                          type="text"
-                          placeholder="---"
-                          value={tempData.ssn}
-                          onChange={e => handleChange('ssn', e.target.value)}
-                        />
-                      </div>
-                      <div style={s.infoItem}>
-                        <div style={s.infoLabel}>Mutuelle</div>
-                        <input
-                          className="edit-input"
-                          type="text"
-                          placeholder="CNAS"
-                          value={tempData.insurance}
-                          onChange={e => handleChange('insurance', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {/* BOUTONS EN BAS */}
-                    <div style={s.btnRow}>
-                      <button style={s.cancelBtn} onClick={handleCancel}>Annuler</button>
-                      <button style={s.saveBtn} onClick={handleSave}>💾 Enregistrer</button>
-                    </div>
-                  </>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => setIsEditing(false)} className="text-slate-500 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer bg-transparent font-sans">
+                      Annuler
+                    </button>
+                    <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 bg-primary-600 text-white border-0 rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-primary-700 cursor-pointer font-sans disabled:opacity-50">
+                      <SaveIcon /> {saving ? 'Enregistrement...' : 'Sauvegarder'}
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {/* ── CARTE ALLERGIES ── */}
-              <div style={s.card}>
-                <h3 style={s.cardTitle}>⚠️ Allergies & Antécédents</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px' }}>
-                  <span style={s.allergyChip}>Aucune allergie signalée</span>
-                </div>
-                <div style={s.antecedentItem}>• Dossier médical informatisé actif</div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { label: 'Date de naissance', field: 'birthDate', type: 'date'   },
+                  { label: 'Email',             value: user?.email, readonly: true  },
+                  { label: 'Téléphone',         field: 'phone',     type: 'tel'    },
+                  { label: 'Groupe sanguin',    field: 'bloodGroup', type: 'select', opts: ['A+','A-','B+','B-','AB+','AB-','O+','O-'] },
+                  { label: 'Mutuelle',          field: 'insurance',  type: 'select', opts: ['CNAS','CASNOS','Privée','Aucune'] },
+                  { label: 'Poids (kg)',        field: 'weight',     type: 'number' },
+                ].map((item, i) => (
+                  <div key={i} className="bg-slate-50 px-3 py-2.5 rounded-lg">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-1">{item.label}</div>
+                    {isEditing && !item.readonly ? (
+                      item.type === 'select' ? (
+                        <select value={tempData[item.field]} onChange={e => setTempData(d => ({ ...d, [item.field]: e.target.value }))} className={inputCls}>
+                          {item.opts.map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : (
+                        <input type={item.type} value={tempData[item.field]} onChange={e => setTempData(d => ({ ...d, [item.field]: e.target.value }))} className={inputCls} />
+                      )
+                    ) : (
+                      <div className="text-sm font-semibold text-slate-900">{item.readonly ? item.value : (tempData[item.field] || '—')}</div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          )}
 
-          {activeTab !== 'info' && (
-            <div style={{ ...s.card, textAlign: 'center', padding: '40px' }}>
-              <p style={{ color: '#64748B' }}>Aucune donnée disponible dans la section {activeTab}.</p>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Santé & Antécédents</h3>
+              <div className="space-y-3">
+                {[
+                  { label: 'Allergies connues',   field: 'allergies',       placeholder: 'Ex: Pénicilline...' },
+                  { label: 'Maladies chroniques', field: 'chronicDiseases', placeholder: 'Ex: Diabète, Hypertension...' },
+                ].map((item, i) => (
+                  <div key={i}>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-1.5">{item.label}</div>
+                    {isEditing ? (
+                      <input type="text" placeholder={item.placeholder} value={tempData[item.field]} onChange={e => setTempData(d => ({ ...d, [item.field]: e.target.value }))} className={inputCls} />
+                    ) : (
+                      <div className="bg-slate-50 px-3 py-2.5 rounded-lg text-sm text-slate-700">
+                        {tempData[item.field] || <span className="text-slate-400 italic">Non renseigné</span>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-2">Données vitales</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { val: tempData.bloodGroup || '—', label: 'Groupe',  cls: 'bg-red-50 text-red-800'      },
+                      { val: tempData.weight ? `${tempData.weight} kg` : '—', label: 'Poids',  cls: 'bg-primary-50 text-primary-800' },
+                      { val: tempData.height ? `${tempData.height} cm` : '—', label: 'Taille', cls: 'bg-green-50 text-green-800'     },
+                    ].map((v, i) => (
+                      <div key={i} className={`${v.cls} rounded-xl p-3 text-center`}>
+                        <div className="text-lg font-extrabold tracking-tight">{v.val}</div>
+                        <div className="text-[10px] mt-0.5">{v.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* ─── Onglet CONSULTATIONS ─── */}
+        {activeTab === 'consultations' && (
+          consultations.length === 0
+            ? <EmptyTab msg="Aucune consultation enregistrée" />
+            : <div className="grid grid-cols-2 gap-4">{consultations.map(r => <RecordCard key={r.id} rec={r} />)}</div>
+        )}
+
+        {/* ─── Onglet ORDONNANCES ─── */}
+        {activeTab === 'ordonnances' && (
+          ordonnances.length === 0
+            ? <EmptyTab msg="Aucune ordonnance disponible" />
+            : <div className="grid grid-cols-2 gap-4">{ordonnances.map(r => <RecordCard key={r.id} rec={r} />)}</div>
+        )}
+
+        {/* ─── Onglet ANALYSES ─── */}
+        {activeTab === 'analyses' && (
+          analyses.length === 0
+            ? <EmptyTab msg="Aucun résultat d'analyse disponible" />
+            : <div className="grid grid-cols-2 gap-4">{analyses.map(r => <RecordCard key={r.id} rec={r} />)}</div>
+        )}
       </div>
     </div>
   );
 }
-
-// ── STYLES ──
-const s = {
-  root: { fontFamily: "'DM Sans', sans-serif", backgroundColor: '#F0F9F8', minHeight: '100vh' },
-  navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100 },
-  navInner: { maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center' },
-  logo: { fontSize: '22px', fontWeight: '800', color: '#0F172A', textDecoration: 'none' },
-  logoAccent: { color: '#F97316' },
-  navLinks: { display: 'flex', gap: '10px', marginLeft: '40px', flex: 1 },
-  navLink: (active) => ({ padding: '8px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: active ? '700' : '500', color: active ? '#0D9488' : '#64748B', backgroundColor: active ? '#CCFBF1' : 'transparent', textDecoration: 'none' }),
-  navRight: { display: 'flex', alignItems: 'center', gap: '15px' },
-  rdvBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '9px 18px', cursor: 'pointer', fontWeight: '600' },
-  userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 10px', borderRadius: '10px', border: '1.5px solid #E2E8F0', cursor: 'pointer' },
-  userAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: '700' },
-  userName: { fontSize: '13px', fontWeight: '600' },
-  dropdown: { position: 'absolute', top: '50px', right: 0, backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', minWidth: '200px' },
-  dropdownHeader: { padding: '12px', borderBottom: '1px solid #F1F5F9' },
-  dropdownName: { fontSize: '14px', fontWeight: '700' },
-  dropdownEmail: { fontSize: '11px', color: '#94A3B8' },
-  dropdownItem: { padding: '10px 12px', fontSize: '13px', cursor: 'pointer' },
-  main: { maxWidth: '1100px', margin: '0 auto', padding: '30px' },
-  pageHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '25px' },
-  pageTitle: { fontSize: '26px', fontWeight: '800' },
-  pageSubtitle: { fontSize: '14px', color: '#64748B' },
-  exportBtn: { backgroundColor: '#fff', border: '1px solid #E2E8F0', padding: '8px 15px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600' },
-  banner: { backgroundColor: '#fff', borderRadius: '18px', padding: '25px', display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', border: '1px solid #E2E8F0' },
-  bannerAvatar: { width: '60px', height: '60px', borderRadius: '15px', background: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: '#fff', fontWeight: '800' },
-  bannerName: { fontSize: '22px', fontWeight: '800' },
-  bannerMeta: { fontSize: '14px', color: '#64748B' },
-  bannerStats: { display: 'flex', gap: '30px', marginLeft: 'auto' },
-  bannerStat: { textAlign: 'center' },
-  bannerStatVal: { fontSize: '24px', fontWeight: '800', color: '#0D9488' },
-  bannerStatLabel: { fontSize: '11px', color: '#94A3B8' },
-  tabs: { display: 'flex', gap: '10px', marginBottom: '20px' },
-  tab: (active) => ({ padding: '10px 20px', borderRadius: '12px', border: 'none', backgroundColor: active ? '#0D9488' : '#fff', color: active ? '#fff' : '#64748B', cursor: 'pointer', fontWeight: '700' }),
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-  card: { backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0' },
-  cardTitle: { fontSize: '16px', fontWeight: '800', marginBottom: '15px' },
-  infoGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' },
-  infoItem: { backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '8px' },
-  infoLabel: { fontSize: '10px', color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' },
-  infoVal: { fontSize: '13px', fontWeight: '600' },
-  allergyChip: { backgroundColor: '#FEE2E2', color: '#DC2626', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
-  antecedentItem: { padding: '10px', backgroundColor: '#F8FAFC', borderRadius: '8px', fontSize: '13px', marginBottom: '5px' },
-  // ── BOUTONS EN BAS ──
-  btnRow: { display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', paddingTop: '12px', borderTop: '1px solid #F1F5F9' },
-  editBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '10px 18px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' },
-  saveBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '10px 18px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' },
-  cancelBtn: { backgroundColor: '#fff', border: '1.5px solid #E2E8F0', color: '#64748B', borderRadius: '9px', padding: '10px 18px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' },
-};

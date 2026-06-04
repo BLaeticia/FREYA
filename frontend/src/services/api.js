@@ -12,11 +12,11 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 - redirect to login
+// Handle 401 - clear session and redirect to login
 API.interceptors.response.use(
   (res) => res,
-  (err) => {   
-    if (err.response?.status === 401) {
+  (err) => {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('freya_token');
       localStorage.removeItem('freya_user');
       window.location.href = '/login';
@@ -58,7 +58,7 @@ export const appointmentsAPI = {
 // ─── MESSAGES ─────────────────────────────────────────────────────────────────
 export const messagesAPI = {
   getConversations: () => API.get('/messages/conversations'),
-  createConversation: (doctor_id) => API.post('/messages/conversations', { doctor_id }),
+  createConversation: (doctorId) => API.post('/messages/conversations', { doctorId }),
   getMessages: (convId) => API.get(`/messages/conversations/${convId}/messages`),
   sendMessage: (convId, content) => API.post(`/messages/conversations/${convId}/messages`, { content }),
 };
@@ -73,8 +73,10 @@ export const recordsAPI = {
 
 // ─── REVIEWS ──────────────────────────────────────────────────────────────────
 export const reviewsAPI = {
-  addReview: (data) => API.post('/reviews', data),
-  getDoctorReviews: (doctorId) => API.get(`/reviews/doctor/${doctorId}`),
+  addReview:        (data)       => API.post('/reviews', data),
+  getDoctorReviews: (doctorId)   => API.get(`/reviews/doctor/${doctorId}`),
+  getClinicReviews: (clinicId)   => API.get(`/reviews/clinic/${clinicId}`),
+  hasReviewed:      (appointmentId) => API.get(`/reviews/has/${appointmentId}`),
 };
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
@@ -82,6 +84,17 @@ export const notificationsAPI = {
   getAll: () => API.get('/notifications'),
   markAllRead: () => API.patch('/notifications/read-all'),
   markRead: (id) => API.patch(`/notifications/${id}/read`),
+};
+
+// ─── LABORATOIRE ──────────────────────────────────────────────────────────────
+export const laboAPI = {
+  getProfile:        ()      => API.get('/labo/profile'),
+  updateProfile:     (data)  => API.put('/labo/profile', data),
+  getStats:          ()      => API.get('/labo/stats'),
+  getAnalyses:       ()      => API.get('/labo/analyses'),
+  getAppointments:   ()      => API.get('/labo/appointments'),
+  updateApptStatus:  (id, s) => API.patch(`/labo/appointments/${id}/status`, { status: s }),
+  sendResults:       (data)  => API.post('/labo/results', data),
 };
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────

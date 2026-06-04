@@ -20,22 +20,30 @@ import PatientFavoris   from './pages/patient/PatientFavoris';
 import PatientDashboard from './pages/patient/PatientDashboard';
 
 import BookingPage from './pages/patient/BookingPage';
-// ─── Pages ajoutées ────────────────────────────────
 import { DoctorPublicPage } from './pages/DoctorPublicPage';
 import LabPublicPage        from './pages/LabPublicPage';
+import DoctorAppointmentsPage from './pages/doctor/DoctorAppointments';
+import DoctorPatientsPage     from './pages/doctor/DoctorPatients';
+import DoctorAvailabilityPage from './pages/doctor/DoctorAvailability';
+import LabDashboard     from './pages/labo/LabDashboard';
+import LabAnalyses      from './pages/labo/LabAnalyses';
+import LabMessages      from './pages/labo/LabMessages';
+import LabProfile       from './pages/labo/LabProfile';
+import LabAppointments  from './pages/labo/LabAppointments';
 
 import PatientNotifications from './pages/patient/PatientNotifications';
 
 
 
 import {
-  DoctorAppointments, DoctorPatients, DoctorProfile, DoctorAvailability,
+  DoctorProfile,
   AdminClinics
 } from './pages/stubs';
 
 // ─── Auth Guard ────────────────────────────────────
 const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user } = useAuthStore();
+  console.log('[PrivateRoute] isAuthenticated:', isAuthenticated, '| role:', user?.role, '| required:', roles);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user?.role)) return <Navigate to="/" replace />;
   return children;
@@ -73,16 +81,23 @@ function App() {
         
         {/* ── Médecin ─────────────────────────────────── */}
         <Route path="/doctor"              element={<PrivateRoute roles={['doctor']}><DoctorDashboard /></PrivateRoute>} />
-        <Route path="/doctor/appointments" element={<PrivateRoute roles={['doctor']}><DoctorAppointments /></PrivateRoute>} />
+        <Route path="/doctor/appointments" element={<PrivateRoute roles={['doctor']}><DoctorAppointmentsPage /></PrivateRoute>} />
         <Route path="/doctor/messages"     element={<PrivateRoute roles={['doctor']}><DoctorMessages /></PrivateRoute>} />
-        <Route path="/doctor/patients"     element={<PrivateRoute roles={['doctor']}><DoctorPatients /></PrivateRoute>} />
+        <Route path="/doctor/patients"     element={<PrivateRoute roles={['doctor']}><DoctorPatientsPage /></PrivateRoute>} />
         <Route path="/doctor/profile"      element={<PrivateRoute roles={['doctor']}><DoctorProfile /></PrivateRoute>} />
-        <Route path="/doctor/availability" element={<PrivateRoute roles={['doctor']}><DoctorAvailability /></PrivateRoute>} />
+        <Route path="/doctor/availability" element={<PrivateRoute roles={['doctor']}><DoctorAvailabilityPage /></PrivateRoute>} />
 
         {/* ── Admin ───────────────────────────────────── */}
         <Route path="/admin"         element={<PrivateRoute roles={['admin']}><AdminDashboard /></PrivateRoute>} />
         <Route path="/admin/doctors" element={<PrivateRoute roles={['admin']}><AdminDoctors /></PrivateRoute>} />
         <Route path="/admin/clinics" element={<PrivateRoute roles={['admin']}><AdminClinics /></PrivateRoute>} />
+
+        {/* ── Laboratoire ─────────────────────────────── */}
+        <Route path="/labo"                element={<PrivateRoute roles={['laboratory']}><LabDashboard    /></PrivateRoute>} />
+        <Route path="/labo/appointments"   element={<PrivateRoute roles={['laboratory']}><LabAppointments /></PrivateRoute>} />
+        <Route path="/labo/analyses"       element={<PrivateRoute roles={['laboratory']}><LabAnalyses     /></PrivateRoute>} />
+        <Route path="/labo/messages"       element={<PrivateRoute roles={['laboratory']}><LabMessages     /></PrivateRoute>} />
+        <Route path="/labo/profile"        element={<PrivateRoute roles={['laboratory']}><LabProfile      /></PrivateRoute>} />
 
         {/* ── 404 ─────────────────────────────────────── */}
         <Route path="*" element={<Navigate to="/" replace />} />

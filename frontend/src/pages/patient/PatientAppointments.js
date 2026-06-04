@@ -1,327 +1,466 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import useAuthStore from '../../store/authStore';
-
-const UPCOMING = [
-  { id: 1, doctor: 'Dr. Amira Benali', specialty: 'Cardiologue', date: 'Lundi 17 Mars 2026', time: '09h30', address: '12 Rue Didouche Mourad, Alger', avatar: 'AB', color: '#0D9488', type: 'Consultation', status: 'confirmed' },
-  { id: 2, doctor: 'Dr. Karim Meziane', specialty: 'Généraliste', date: 'Jeudi 20 Mars 2026', time: '14h00', address: '5 Bd Krim Belkacem, Alger', avatar: 'KM', color: '#2563EB', type: 'Suivi', status: 'pending' },
-];
-
-const PAST = [
-  { id: 3, doctor: 'Dr. Sonia Hadj', specialty: 'Dermatologue', date: '5 Février 2026', time: '10h00', address: '8 Rue Ben Mehidi, Alger', avatar: 'SH', color: '#7C3AED', type: 'Consultation', status: 'done' },
-  { id: 4, doctor: 'Dr. Yacine Bouali', specialty: 'Pédiatre', date: '14 Janvier 2026', time: '11h30', address: '3 Rue Hassiba Ben Bouali, Alger', avatar: 'YB', color: '#F59E0B', type: 'Urgence', status: 'done' },
-  { id: 5, doctor: 'Dr. Amira Benali', specialty: 'Cardiologue', date: '2 Décembre 2025', time: '09h00', address: '12 Rue Didouche Mourad, Alger', avatar: 'AB', color: '#0D9488', type: 'Contrôle', status: 'done' },
-];
+import { appointmentsAPI, reviewsAPI, messagesAPI } from '../../services/api';
+import PatientNavbar from '../../components/PatientNavbar';
 
 const STATUS_MAP = {
-  confirmed: { bg: '#DCFCE7', color: '#16A34A', label: '✅ Confirmé' },
-  pending:   { bg: '#FEF3C7', color: '#D97706', label: '⏳ En attente' },
-  done:      { bg: '#F1F5F9', color: '#64748B', label: '✔ Terminé' },
-  cancelled: { bg: '#FEE2E2', color: '#DC2626', label: '❌ Annulé' },
+  confirmed: { label: 'Confirmé',   cls: 'bg-green-100 text-green-800'  },
+  pending:   { label: 'En attente', cls: 'bg-amber-100 text-amber-800'  },
+  completed: { label: 'Terminé',    cls: 'bg-slate-100 text-slate-600'  },
+  cancelled: { label: 'Annulé',     cls: 'bg-red-100 text-red-800'      },
+  no_show:   { label: 'Absent',     cls: 'bg-red-100 text-red-700'      },
 };
 
+const CalendarIcon = ({ size = 13, color = '#64748B' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+const ClockIcon = ({ size = 13, color = '#64748B' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+const MapIcon = ({ size = 13, color = '#64748B' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const AlertIcon = () => (
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+const InboxIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+  </svg>
+);
+const SpinnerIcon = () => (
+  <div className="w-7 h-7 border-[3px] border-slate-200 border-t-primary-600 rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+);
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+function fmtDateShort(d) {
+  if (!d) return { day: '—', month: '—' };
+  const dt = new Date(d);
+  return {
+    day:   dt.getDate(),
+    month: dt.toLocaleDateString('fr-FR', { month: 'short' }),
+  };
+}
+
+const EMPTY_REVIEW = { rating: 0, comment: '', isAnonymous: false };
+
 export default function PatientAppointments() {
-  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('upcoming');
-  const [appointments, setAppointments] = useState({ upcoming: UPCOMING, past: PAST });
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(null); // appt id
-  const [showDetailModal, setShowDetailModal] = useState(null); // appt object
+  const [activeTab, setActiveTab]       = useState('upcoming');
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [cancelling, setCancelling]     = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(null);
+  const [reviewModal,     setReviewModal]     = useState(null); // appointment
+  const [reviewForm,      setReviewForm]      = useState(EMPTY_REVIEW);
+  const [reviewSaving,    setReviewSaving]    = useState(false);
 
-  const firstName = user?.first_name || 'Patient';
-  const initials = `${user?.first_name?.[0] || 'P'}${user?.last_name?.[0] || ''}`.toUpperCase();
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await appointmentsAPI.getMyAppointments({ limit: 100 });
+      setAppointments(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      toast.error('Erreur de chargement des rendez-vous');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleLogout = () => { logout(); navigate('/login'); toast.success('Déconnecté !'); };
+  useEffect(() => { load(); }, [load]);
 
-  const handleCancel = (id) => {
-    setAppointments(prev => ({
-      ...prev,
-      upcoming: prev.upcoming.map(a => a.id === id ? { ...a, status: 'cancelled' } : a),
-    }));
-    setShowCancelModal(null);
-    toast.success('Rendez-vous annulé.');
+  const upcoming = appointments.filter(a => ['pending', 'confirmed'].includes(a.status));
+  const past     = appointments.filter(a => ['completed', 'cancelled', 'no_show'].includes(a.status));
+  const list     = activeTab === 'upcoming' ? upcoming : past;
+
+  const handleContactDoctor = async (doctorId) => {
+    try {
+      const res = await messagesAPI.createConversation(doctorId);
+      const convId = res.data?.id;
+      navigate('/patient/messages', { state: { convId } });
+    } catch {
+      navigate('/patient/messages');
+    }
+    setShowDetailModal(null);
   };
 
-  const navLinks = [
-    { id: 'accueil', label: 'Accueil', path: '/patient' },
-    { id: 'rdv', label: 'Mes rendez-vous', path: '/patient/appointments' },
-    { id: 'medecins', label: 'Trouver un médecin', path: '/doctors' },
-    { id: 'messages', label: 'Messages', path: '/patient/messages' },
-    { id: 'dossier', label: 'Dossier médical', path: '/patient/dossier' },
-    { id: 'favoris', label: '❤️ Favoris', path: '/patient/favoris' },
+  const submitReview = async () => {
+    if (reviewForm.rating === 0) { toast.error('Choisissez une note'); return; }
+    setReviewSaving(true);
+    try {
+      const appt = reviewModal;
+      await reviewsAPI.addReview({
+        doctorId:     appt.appointmentType === 'lab' ? null : appt.doctorId,
+        clinicId:     appt.appointmentType === 'lab' ? appt.clinicId : null,
+        appointmentId: appt.id,
+        rating:       reviewForm.rating,
+        comment:      reviewForm.comment,
+        isAnonymous:  reviewForm.isAnonymous,
+      });
+      toast.success('Avis publié. Merci !');
+      setReviewModal(null);
+      setReviewForm(EMPTY_REVIEW);
+      // Marquer localement comme noté
+      setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, _reviewed: true } : a));
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Erreur lors de l'envoi");
+    } finally {
+      setReviewSaving(false);
+    }
+  };
+
+  const handleCancel = async (id) => {
+    setCancelling(id);
+    try {
+      await appointmentsAPI.updateStatus(id, 'cancelled');
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a));
+      setShowCancelModal(null);
+      toast.success('Rendez-vous annulé');
+    } catch {
+      toast.error("Erreur lors de l'annulation");
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  const stats = [
+    { val: upcoming.length,                                          label: 'À venir',    cls: 'border-t-primary-600 text-primary-600' },
+    { val: upcoming.filter(a => a.status === 'confirmed').length,    label: 'Confirmés',  cls: 'border-t-green-500  text-green-600'  },
+    { val: upcoming.filter(a => a.status === 'pending').length,      label: 'En attente', cls: 'border-t-amber-500  text-amber-600'  },
+    { val: past.length,                                              label: 'Passés',     cls: 'border-t-slate-400  text-slate-600'  },
   ];
 
-  const list = activeTab === 'upcoming' ? appointments.upcoming : appointments.past;
-
-  const parseDate = (dateStr) => {
-    const parts = dateStr.split(' ');
-    if (parts.length >= 3) return { day: parts[1], month: parts[2]?.substring(0, 3) };
-    return { day: '—', month: '—' };
-  };
-
   return (
-    <div style={s.root} onClick={() => setShowUserMenu(false)}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        .nav-link:hover { background-color: #F1F5F9 !important; }
-        .appt-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important; transform: translateY(-1px); }
-        .appt-card { transition: all 0.18s ease; }
-        .btn-hover:hover { opacity: 0.88; transform: translateY(-1px); }
-        .btn-hover { transition: all 0.15s; }
-        .dropdown-item:hover { background-color: #F8FAFC; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .fade-up { animation: fadeUp 0.22s ease; }
-      `}</style>
+    <div className="font-sans bg-slate-50 min-h-screen">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <PatientNavbar active="rdv" />
 
-      {/* ── NAVBAR ── */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <Link to="/" style={s.logo}>Frey<span style={s.logoAccent}>a</span></Link>
-          <div style={s.navLinks}>
-            {navLinks.map(link => (
-              <Link key={link.id} to={link.path} className="nav-link" style={s.navLink(link.id === 'rdv')}>
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div style={s.navRight}>
-            <button style={s.rdvBtn} onClick={() => setShowNewModal(true)}>+ Nouveau RDV</button>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={s.userBtn} onClick={() => setShowUserMenu(v => !v)}>
-                <div style={s.userAvatar}>{initials}</div>
-                <span style={s.userName}>{firstName}</span>
-                <span style={{ fontSize: '10px', color: '#94A3B8' }}>▼</span>
-              </div>
-              {showUserMenu && (
-                <div style={s.dropdown}>
-                  <div style={s.dropdownHeader}>
-                    <div style={s.dropdownName}>{firstName} {user?.last_name}</div>
-                    <div style={s.dropdownEmail}>{user?.email}</div>
-                  </div>
-                  {[
-                    { icon: '👤', label: 'Mon profil', path: '/patient/profile' },
-                    { icon: '💬', label: 'Messages', path: '/patient/messages' },
-                    { icon: '🗂️', label: 'Dossier médical', path: '/patient/dossier' },
-                  ].map((item, i) => (
-                    <div key={i} className="dropdown-item" style={s.dropdownItem} onClick={() => navigate(item.path)}>
-                      <span>{item.icon}</span>{item.label}
-                    </div>
-                  ))}
-                  <div style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <div className="dropdown-item" style={{ ...s.dropdownItem, color: '#EF4444' }} onClick={handleLogout}>
-                      <span>🚪</span> Déconnexion
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN ── */}
-      <div style={s.main}>
-        {/* Page Header */}
-        <div style={s.pageHeader}>
+      <div className="max-w-6xl mx-auto px-6 py-7">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
           <div>
-            <h1 style={s.pageTitle}>📅 Mes Rendez-vous</h1>
-            <p style={s.pageSubtitle}>Gérez tous vos rendez-vous médicaux</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">Mes Rendez-vous</h1>
+            <p className="text-sm text-slate-500">Gérez tous vos rendez-vous médicaux</p>
           </div>
-          <button className="btn-hover" style={s.newBtn} onClick={() => setShowNewModal(true)}>
+          <button
+            onClick={() => navigate('/doctors')}
+            className="bg-primary-600 text-white border-0 rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors"
+          >
             + Nouveau rendez-vous
           </button>
         </div>
 
         {/* Stats */}
-        <div style={s.statsGrid}>
-          {[
-            { icon: '📅', val: appointments.upcoming.length, label: 'À venir', color: '#0D9488' },
-            { icon: '✅', val: appointments.upcoming.filter(a => a.status === 'confirmed').length, label: 'Confirmés', color: '#16A34A' },
-            { icon: '⏳', val: appointments.upcoming.filter(a => a.status === 'pending').length, label: 'En attente', color: '#D97706' },
-            { icon: '✔', val: appointments.past.length, label: 'Passés', color: '#64748B' },
-          ].map((st, i) => (
-            <div key={i} style={s.statCard(st.color)}>
-              <div style={{ fontSize: '26px' }}>{st.icon}</div>
-              <div style={s.statVal(st.color)}>{st.val}</div>
-              <div style={s.statLabel}>{st.label}</div>
+        <div className="grid grid-cols-4 gap-3.5 mb-5">
+          {stats.map((st, i) => (
+            <div key={i} className={`bg-white rounded-2xl border border-slate-200 border-t-[3px] shadow-card p-5 ${st.cls.split(' ')[0]}`}>
+              <div className={`text-3xl font-extrabold tracking-tight mb-1 ${st.cls.split(' ')[1]}`}>{st.val}</div>
+              <div className="text-xs text-slate-500 font-medium">{st.label}</div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div style={s.tabs}>
-          <button style={s.tab(activeTab === 'upcoming')} onClick={() => setActiveTab('upcoming')}>
-            📅 À venir ({appointments.upcoming.length})
-          </button>
-          <button style={s.tab(activeTab === 'past')} onClick={() => setActiveTab('past')}>
-            ✔ Passés ({appointments.past.length})
-          </button>
+        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 mb-4 w-fit">
+          {[
+            { id: 'upcoming', label: `À venir (${upcoming.length})` },
+            { id: 'past',     label: `Passés (${past.length})` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer border-0 font-sans ${activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-slate-500 hover:text-primary-600'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* List */}
-        <div className="fade-up">
-          {list.length === 0 && (
-            <div style={s.emptyState}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>📭</div>
-              <h3 style={{ color: '#64748B', fontWeight: '600' }}>Aucun rendez-vous</h3>
-              <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>Vos rendez-vous apparaîtront ici</p>
-            </div>
-          )}
-          {list.map(appt => {
-            const { day, month } = parseDate(appt.date);
-            const st = STATUS_MAP[appt.status];
-            return (
-              <div key={appt.id} className="appt-card" style={s.apptCard(appt.status === 'cancelled')}>
-                {/* Date block */}
-                <div style={s.dateBlock(appt.color)}>
-                  <div style={s.dateDay(appt.color)}>{day}</div>
-                  <div style={s.dateMonth}>{month}</div>
-                </div>
+        {loading ? (
+          <div className="flex justify-center py-16"><SpinnerIcon /></div>
+        ) : list.length === 0 ? (
+          <div className="flex flex-col items-center py-16 gap-3">
+            <InboxIcon />
+            <p className="text-slate-600 font-semibold">Aucun rendez-vous</p>
+            <p className="text-sm text-slate-400">
+              {activeTab === 'upcoming' ? 'Prenez un rendez-vous avec un médecin' : 'Vos rendez-vous passés apparaîtront ici'}
+            </p>
+            {activeTab === 'upcoming' && (
+              <button onClick={() => navigate('/doctors')} className="bg-primary-600 text-white border-0 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors mt-1">
+                Trouver un médecin
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            {list.map(appt => {
+              const { day, month } = fmtDateShort(appt.appointmentDate);
+              const st = STATUS_MAP[appt.status] || STATUS_MAP.pending;
+              const isLab = appt.appointmentType === 'lab' || (!appt.doctor && appt.clinic);
 
-                <div style={s.divider} />
+              // Nom affiché
+              const displayName = isLab
+                ? (appt.clinic?.name || 'Laboratoire')
+                : (`Dr. ${appt.doctor?.user?.firstName || ''} ${appt.doctor?.user?.lastName || ''}`.trim() || 'Médecin');
 
-                {/* Avatar */}
-                <div style={s.apptAvatar(appt.color)}>{appt.avatar}</div>
+              // Sous-titre (spécialité ou type)
+              const displaySub = isLab
+                ? `Analyses médicales · ${appt.clinic?.wilaya || ''}`
+                : (appt.doctor?.specialite || '');
 
-                {/* Info */}
-                <div style={s.apptInfo}>
-                  <div style={s.apptDoctor}>{appt.doctor}</div>
-                  <div style={s.apptSpec}>{appt.specialty}</div>
-                  <div style={s.apptMeta}>
-                    <span style={s.metaTag}>⏰ {appt.time}</span>
-                    <span style={s.metaTag}>📍 {appt.address}</span>
-                    <span style={s.typeChip}>{appt.type}</span>
-                    <span style={{ ...s.statusChip, backgroundColor: st.bg, color: st.color }}>{st.label}</span>
+              // Adresse
+              const address = isLab
+                ? (appt.clinic?.address || appt.clinic?.wilaya || '—')
+                : (appt.doctor?.cabinetAddress || appt.doctor?.wilaya || '—');
+
+              // Initiales
+              const initials = isLab
+                ? (appt.clinic?.name?.slice(0, 2)?.toUpperCase() || 'LA')
+                : `${appt.doctor?.user?.firstName?.[0] || 'D'}${appt.doctor?.user?.lastName?.[0] || 'r'}`;
+
+              // Couleur de l'avatar
+              const avatarCls = isLab
+                ? 'bg-green-50 text-green-600'
+                : 'bg-primary-50 text-primary-600';
+
+              return (
+                <div
+                  key={appt.id}
+                  className={`flex items-center gap-3.5 rounded-2xl p-5 mb-2.5 border transition-all hover:shadow-card ${
+                    appt.status === 'cancelled' ? 'bg-red-50/30 border-red-200' : 'bg-white border-slate-200'
+                  }`}
+                >
+                  {/* Date */}
+                  <div className="bg-primary-50 rounded-xl px-3.5 py-2.5 text-center min-w-[60px] shrink-0">
+                    <div className="text-xl font-extrabold text-primary-600 tracking-tighter">{day}</div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wide">{month}</div>
+                  </div>
+                  <div className="w-px h-12 bg-slate-200 shrink-0" />
+                  {/* Avatar */}
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarCls}`}>
+                    {isLab ? '🔬' : initials}
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="text-[15px] font-bold text-slate-900">{displayName}</div>
+                      {isLab && <span className="text-[10px] font-semibold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">Labo</span>}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5 mb-2">{displaySub}</div>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+                        <ClockIcon />{appt.appointmentTime}
+                      </span>
+                      {address && address !== '—' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+                          <MapIcon />{address}
+                        </span>
+                      )}
+                      {appt.motif && (
+                        <span className="text-[11px] bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded-md">{appt.motif}</span>
+                      )}
+                      <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                    </div>
+                  </div>
+                  {/* Actions */}
+                  <div className="flex gap-2 shrink-0 flex-wrap">
+                    {appt.status === 'completed' && (
+                      <div className="flex gap-2">
+                        {!appt._reviewed && (
+                          <button
+                            onClick={() => { setReviewModal(appt); setReviewForm(EMPTY_REVIEW); }}
+                            className="bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-amber-100 transition-colors"
+                          >
+                            Donner mon avis
+                          </button>
+                        )}
+                        <button onClick={() => navigate('/doctors')} className="bg-primary-600 text-white border-0 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors">
+                          Reprendre RDV
+                        </button>
+                      </div>
+                    )}
+                    {(appt.status === 'confirmed' || appt.status === 'pending') && (
+                      <>
+                        <button onClick={() => setShowDetailModal(appt)} className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-slate-100 transition-colors">
+                          Détails
+                        </button>
+                        <button onClick={() => setShowCancelModal(appt.id)} className="bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-red-100 transition-colors">
+                          Annuler
+                        </button>
+                      </>
+                    )}
+                    {appt.status === 'cancelled' && (
+                      <button onClick={() => navigate('/doctors')} className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold cursor-pointer font-sans hover:bg-slate-100 transition-colors">
+                        Reprendre
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div style={s.actions}>
-                  {appt.status === 'done' && (
-                    <button className="btn-hover" style={s.btnPrimary} onClick={() => navigate('/doctors')}>
-                      🔄 Reprendre RDV
-                    </button>
-                  )}
-                  {(appt.status === 'confirmed' || appt.status === 'pending') && (
-                    <>
-                      <button className="btn-hover" style={s.btnPrimary} onClick={() => setShowDetailModal(appt)}>
-                        Détails
-                      </button>
-                      <button className="btn-hover" style={s.btnDanger} onClick={() => setShowCancelModal(appt.id)}>
-                        Annuler
-                      </button>
-                    </>
-                  )}
-                  {appt.status === 'cancelled' && (
-                    <button className="btn-hover" style={s.btnGhost} onClick={() => navigate('/doctors')}>
-                      + Reprendre
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ── MODAL: Nouveau RDV ── */}
-      {showNewModal && (
-        <div style={s.overlay} onClick={() => setShowNewModal(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
-            <h2 style={s.modalTitle}>📅 Nouveau Rendez-vous</h2>
-            <div style={s.formField}>
-              <label style={s.formLabel}>Spécialité</label>
-              <select style={s.formSelect}>
-                {['Généraliste', 'Cardiologue', 'Dermatologue', 'Pédiatre', 'Ophtalmologue', 'Gynécologue', 'Neurologie'].map(sp => (
-                  <option key={sp}>{sp}</option>
-                ))}
-              </select>
-            </div>
-            <div style={s.formField}>
-              <label style={s.formLabel}>Wilaya</label>
-              <select style={s.formSelect}>
-                {['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Tizi Ouzou', 'Sétif'].map(w => (
-                  <option key={w}>{w}</option>
-                ))}
-              </select>
-            </div>
-            <div style={s.formField}>
-              <label style={s.formLabel}>Date souhaitée</label>
-              <input type="date" style={s.formInput} min={new Date().toISOString().split('T')[0]} />
-            </div>
-            <div style={s.formField}>
-              <label style={s.formLabel}>Type de consultation</label>
-              <select style={s.formSelect}>
-                {['Consultation', 'Suivi', 'Urgence', 'Contrôle'].map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div style={s.formField}>
-              <label style={s.formLabel}>Motif (optionnel)</label>
-              <input type="text" placeholder="Ex: douleurs thoraciques..." style={s.formInput} />
-            </div>
-            <div style={s.modalBtns}>
-              <button style={s.btnGhost} onClick={() => setShowNewModal(false)}>Annuler</button>
-              <button className="btn-hover" style={s.btnPrimary} onClick={() => { setShowNewModal(false); navigate('/doctors'); }}>
-                Rechercher un médecin →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: Confirmer annulation ── */}
+      {/* Modal: Confirmer annulation */}
       {showCancelModal && (
-        <div style={s.overlay} onClick={() => setShowCancelModal(null)}>
-          <div style={{ ...s.modal, maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '40px', textAlign: 'center', marginBottom: '16px' }}>⚠️</div>
-            <h2 style={{ ...s.modalTitle, textAlign: 'center' }}>Annuler ce rendez-vous ?</h2>
-            <p style={{ fontSize: '14px', color: '#64748B', textAlign: 'center', marginBottom: '24px' }}>
-              Cette action est irréversible. Le médecin sera notifié de l'annulation.
-            </p>
-            <div style={s.modalBtns}>
-              <button style={s.btnGhost} onClick={() => setShowCancelModal(null)}>Non, garder</button>
-              <button className="btn-hover" style={{ ...s.btnPrimary, backgroundColor: '#EF4444' }} onClick={() => handleCancel(showCancelModal)}>
-                Oui, annuler
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCancelModal(null)}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-center mb-4"><AlertIcon /></div>
+            <h2 className="text-xl font-extrabold text-slate-900 mb-2">Annuler ce rendez-vous ?</h2>
+            <p className="text-sm text-slate-500 mb-6">Cette action est irréversible. Le médecin sera notifié de l'annulation.</p>
+            <div className="flex gap-2.5 justify-center">
+              <button onClick={() => setShowCancelModal(null)} className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-slate-100 transition-colors">
+                Non, garder
+              </button>
+              <button
+                onClick={() => handleCancel(showCancelModal)}
+                disabled={!!cancelling}
+                className="bg-red-500 text-white border-0 rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {cancelling ? 'Annulation...' : 'Oui, annuler'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL: Détails RDV ── */}
+      {/* Modal: Détails */}
       {showDetailModal && (
-        <div style={s.overlay} onClick={() => setShowDetailModal(null)}>
-          <div style={{ ...s.modal, maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
-            <h2 style={s.modalTitle}>📋 Détails du rendez-vous</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '14px' }}>
-              <div style={{ ...s.apptAvatar(showDetailModal.color), width: '52px', height: '52px' }}>{showDetailModal.avatar}</div>
-              <div>
-                <div style={s.apptDoctor}>{showDetailModal.doctor}</div>
-                <div style={s.apptSpec}>{showDetailModal.specialty}</div>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDetailModal(null)}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-extrabold text-slate-900 mb-5">Détails du rendez-vous</h2>
+            {/* Header médecin ou labo */}
+            {showDetailModal.appointmentType === 'lab' ? (
+              <div className="flex items-center gap-3.5 mb-5 bg-green-50 rounded-xl p-3.5">
+                <div className="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-xl shrink-0">🔬</div>
+                <div>
+                  <div className="text-[15px] font-bold text-slate-900">{showDetailModal.clinic?.name || 'Laboratoire'}</div>
+                  <div className="text-xs text-green-600 font-semibold">Analyses médicales</div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-3.5 mb-5 bg-slate-50 rounded-xl p-3.5">
+                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-sm font-bold shrink-0">
+                  {showDetailModal.doctor?.user?.firstName?.[0]}{showDetailModal.doctor?.user?.lastName?.[0]}
+                </div>
+                <div>
+                  <div className="text-[15px] font-bold text-slate-900">
+                    Dr. {showDetailModal.doctor?.user?.firstName} {showDetailModal.doctor?.user?.lastName}
+                  </div>
+                  <div className="text-xs text-slate-500">{showDetailModal.doctor?.specialite}</div>
+                </div>
+              </div>
+            )}
             {[
-              { label: 'Date', val: showDetailModal.date },
-              { label: 'Heure', val: showDetailModal.time },
-              { label: 'Adresse', val: showDetailModal.address },
-              { label: 'Type', val: showDetailModal.type },
-              { label: 'Statut', val: STATUS_MAP[showDetailModal.status].label },
+              { label: 'Date',    val: fmtDate(showDetailModal.appointmentDate) },
+              { label: 'Heure',   val: showDetailModal.appointmentTime },
+              { label: 'Adresse', val: showDetailModal.appointmentType === 'lab'
+                ? (showDetailModal.clinic?.address || showDetailModal.clinic?.wilaya || '—')
+                : (showDetailModal.doctor?.cabinetAddress || showDetailModal.doctor?.wilaya || '—') },
+              { label: 'Motif',   val: showDetailModal.motif || '—' },
+              { label: 'Statut',  val: STATUS_MAP[showDetailModal.status]?.label },
             ].map((row, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #F1F5F9', fontSize: '14px' }}>
-                <span style={{ color: '#94A3B8', fontWeight: '600' }}>{row.label}</span>
-                <span style={{ color: '#0F172A', fontWeight: '500' }}>{row.val}</span>
+              <div key={i} className="flex justify-between py-2.5 border-b border-slate-100 text-sm">
+                <span className="text-slate-400 font-semibold">{row.label}</span>
+                <span className="text-slate-900 font-medium">{row.val}</span>
               </div>
             ))}
-            <div style={{ ...s.modalBtns, marginTop: '20px' }}>
-              <button style={s.btnGhost} onClick={() => setShowDetailModal(null)}>Fermer</button>
-              <button className="btn-hover" style={s.btnPrimary} onClick={() => { setShowDetailModal(null); navigate('/patient/messages'); }}>
-                💬 Contacter le médecin
+            <div className="flex gap-2.5 justify-end mt-5">
+              <button onClick={() => setShowDetailModal(null)} className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-slate-100 transition-colors">
+                Fermer
+              </button>
+              {showDetailModal.appointmentType !== 'lab' && showDetailModal.doctor?.id && (
+                <button
+                  onClick={() => handleContactDoctor(showDetailModal.doctor.id)}
+                  className="bg-primary-600 text-white border-0 rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors"
+                >
+                  Contacter le médecin
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Donner un avis */}
+      {reviewModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setReviewModal(null)}>
+          <div className="bg-white rounded-2xl p-7 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-extrabold text-slate-900 mb-1">Donner mon avis</h2>
+            <p className="text-sm text-slate-500 mb-5">
+              {reviewModal.appointmentType === 'lab'
+                ? reviewModal.clinic?.name
+                : `Dr. ${reviewModal.doctor?.user?.firstName} ${reviewModal.doctor?.user?.lastName} — ${reviewModal.doctor?.specialite}`}
+            </p>
+
+            {/* Étoiles */}
+            <div className="mb-5">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Note *</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
+                    className={`text-3xl transition-all cursor-pointer bg-transparent border-0 p-0 leading-none ${
+                      star <= reviewForm.rating ? 'text-amber-400' : 'text-slate-200'
+                    }`}
+                    style={{ filter: star <= reviewForm.rating ? 'drop-shadow(0 0 4px rgba(251,191,36,0.5))' : 'none' }}
+                  >
+                    ★
+                  </button>
+                ))}
+                <span className="ml-2 text-sm text-slate-400 self-center">
+                  {['', 'Très insatisfait', 'Insatisfait', 'Correct', 'Bien', 'Excellent'][reviewForm.rating]}
+                </span>
+              </div>
+            </div>
+
+            {/* Commentaire */}
+            <div className="mb-4">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Commentaire (optionnel)</label>
+              <textarea
+                rows={3}
+                value={reviewForm.comment}
+                onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+                placeholder="Partagez votre expérience..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 outline-none font-sans focus:border-primary-400 transition-colors bg-slate-50 resize-none"
+              />
+            </div>
+
+            {/* Anonyme */}
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 mb-5">
+              <input
+                type="checkbox"
+                checked={reviewForm.isAnonymous}
+                onChange={e => setReviewForm(f => ({ ...f, isAnonymous: e.target.checked }))}
+                className="accent-primary-600 w-4 h-4"
+              />
+              Publier de façon anonyme
+            </label>
+
+            <div className="flex gap-2.5 justify-end">
+              <button onClick={() => setReviewModal(null)} className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-slate-100 transition-colors">
+                Annuler
+              </button>
+              <button onClick={submitReview} disabled={reviewSaving || reviewForm.rating === 0} className="bg-amber-500 hover:bg-amber-600 text-white border-0 rounded-xl px-5 py-2.5 text-sm font-bold cursor-pointer font-sans transition-colors disabled:opacity-50">
+                {reviewSaving ? 'Publication...' : 'Publier mon avis'}
               </button>
             </div>
           </div>
@@ -330,66 +469,3 @@ export default function PatientAppointments() {
     </div>
   );
 }
-
-/* ─── STYLES ─── */
-const s = {
-  root: { fontFamily: "'DM Sans','Segoe UI',sans-serif", backgroundColor: '#F0F9F8', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.05)', flexShrink: 0 },
-  navInner: { maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', gap: '20px' },
-  logo: { fontSize: '22px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px', textDecoration: 'none', flexShrink: 0 },
-  logoAccent: { color: '#F97316' },
-  navLinks: { display: 'flex', gap: '2px', flex: 1 },
-  navLink: (active) => ({ padding: '7px 13px', borderRadius: '8px', fontSize: '13.5px', fontWeight: active ? '700' : '500', color: active ? '#0D9488' : '#64748B', backgroundColor: active ? '#CCFBF1' : 'transparent', textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all 0.15s' }),
-  navRight: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
-  rdvBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '9px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 11px 5px 5px', borderRadius: '10px', border: '1.5px solid #E2E8F0', cursor: 'pointer', backgroundColor: '#fff' },
-  userAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#0D9488,#065F52)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff' },
-  userName: { fontSize: '13px', fontWeight: '600', color: '#0F172A' },
-  dropdown: { position: 'absolute', top: '50px', right: 0, backgroundColor: '#fff', borderRadius: '14px', border: '1.5px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0,0,0,0.10)', minWidth: '210px', zIndex: 300, overflow: 'hidden' },
-  dropdownHeader: { padding: '14px 16px', borderBottom: '1px solid #F1F5F9' },
-  dropdownName: { fontSize: '14px', fontWeight: '700', color: '#0F172A' },
-  dropdownEmail: { fontSize: '12px', color: '#94A3B8', marginTop: '2px' },
-  dropdownItem: { padding: '11px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: '#0F172A' },
-
-  main: { flex: 1, maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '28px 32px', boxSizing: 'border-box' },
-  pageHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' },
-  pageTitle: { fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px' },
-  pageSubtitle: { fontSize: '14px', color: '#64748B', marginTop: '4px' },
-  newBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '22px' },
-  statCard: (color) => ({ backgroundColor: '#fff', borderRadius: '16px', padding: '18px 20px', border: '1.5px solid #E2E8F0', borderTop: `3px solid ${color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: '6px' }),
-  statVal: (color) => ({ fontSize: '28px', fontWeight: '800', color, letterSpacing: '-1px' }),
-  statLabel: { fontSize: '12px', color: '#64748B', fontWeight: '500' },
-
-  tabs: { display: 'flex', gap: '6px', backgroundColor: '#fff', padding: '6px', borderRadius: '14px', marginBottom: '18px', width: 'fit-content', border: '1.5px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' },
-  tab: (active) => ({ padding: '8px 20px', borderRadius: '10px', border: 'none', fontSize: '14px', fontWeight: active ? '700' : '500', color: active ? '#fff' : '#64748B', backgroundColor: active ? '#0D9488' : 'transparent', cursor: 'pointer', transition: 'all 0.15s' }),
-
-  apptCard: (cancelled) => ({ backgroundColor: cancelled ? '#FFFBFB' : '#fff', borderRadius: '16px', padding: '18px 22px', marginBottom: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', gap: '16px', border: cancelled ? '1.5px solid #FEE2E2' : '1.5px solid #E2E8F0' }),
-  dateBlock: (color) => ({ backgroundColor: color + '12', borderRadius: '12px', padding: '10px 14px', textAlign: 'center', minWidth: '64px', flexShrink: 0 }),
-  dateDay: (color) => ({ fontSize: '22px', fontWeight: '800', color, letterSpacing: '-1px' }),
-  dateMonth: { fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.8px', marginTop: '2px' },
-  divider: { width: '1px', height: '52px', backgroundColor: '#E2E8F0', flexShrink: 0 },
-  apptAvatar: (color) => ({ width: '46px', height: '46px', borderRadius: '12px', backgroundColor: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', flexShrink: 0 }),
-  apptInfo: { flex: 1, minWidth: 0 },
-  apptDoctor: { fontSize: '15px', fontWeight: '700', color: '#0F172A' },
-  apptSpec: { fontSize: '12px', color: '#94A3B8', marginTop: '2px' },
-  apptMeta: { display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' },
-  metaTag: { fontSize: '12px', color: '#64748B' },
-  typeChip: { fontSize: '11px', fontWeight: '600', color: '#0D9488', backgroundColor: '#CCFBF1', padding: '3px 10px', borderRadius: '20px' },
-  statusChip: { fontSize: '11px', fontWeight: '600', padding: '3px 10px', borderRadius: '20px' },
-  actions: { display: 'flex', gap: '8px', flexShrink: 0 },
-  btnPrimary: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  btnDanger: { backgroundColor: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: '9px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  btnGhost: { backgroundColor: '#F1F5F9', color: '#64748B', border: 'none', borderRadius: '9px', padding: '8px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  emptyState: { textAlign: 'center', padding: '60px 20px', color: '#94A3B8' },
-
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(2px)' },
-  modal: { backgroundColor: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '480px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)', margin: '0 16px' },
-  modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0F172A', marginBottom: '22px' },
-  formField: { marginBottom: '14px' },
-  formLabel: { fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '6px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.4px' },
-  formInput: { width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#0F172A' },
-  formSelect: { width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', backgroundColor: '#fff', fontFamily: 'inherit', color: '#0F172A' },
-  modalBtns: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-};

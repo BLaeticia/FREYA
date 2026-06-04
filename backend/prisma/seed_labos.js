@@ -3,8 +3,8 @@
 //  À exécuter APRÈS le seed principal pour ajouter les labos
 //  dans la table "clinics" (compatible schéma existant)
 // ================================================================
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+require('dotenv').config();
+const prisma = require('../prisma/client');
 
 const LABOS = [
   // ALGER

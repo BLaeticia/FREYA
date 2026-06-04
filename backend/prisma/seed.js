@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+require('dotenv').config();
+const prisma = require('../prisma/client');
 const bcrypt = require('bcrypt');
-
-const prisma = new PrismaClient();
 
 // ─── Données algériennes ───────────────────────────────────────────────────────
 

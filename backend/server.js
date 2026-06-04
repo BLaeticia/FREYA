@@ -1,3 +1,4 @@
+// v2.3 — filtrage créneaux passés, messagerie, affichage labo dans RDV, logo
 require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');
@@ -16,7 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/doctors',       require('./routes/doctors'));
-app.use('/api/laboratory',    require('./routes/laboratory'));   // ← AJOUTÉ
+app.use('/api/laboratory',    require('./routes/laboratory'));
+app.use('/api/labo',          require('./routes/labo'));
 app.use('/api/appointments',  appointmentsRouter);
 app.use('/api/messages',      messagesRouter);
 app.use('/api/records',       recordsRouter);

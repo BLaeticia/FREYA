@@ -1,211 +1,166 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { doctorsAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
+import DoctorNavbar from '../../components/DoctorNavbar';
 
-const statusBadge = (s) => {
-  const map = {
-    pending: { bg: '#FEF9C3', color: '#CA8A04', label: 'En attente' },
-    confirmed: { bg: '#DCFCE7', color: '#16A34A', label: 'Confirmé' },
-    completed: { bg: '#DBEAFE', color: '#2563EB', label: 'Terminé' },
-    cancelled: { bg: '#FEE2E2', color: '#DC2626', label: 'Annulé' },
-  };
-  const st = map[s] || { bg: '#F1F5F9', color: '#64748B', label: s };
-  return (
-    <span style={{ backgroundColor: st.bg, color: st.color, fontSize: '11px', fontWeight: '600', padding: '3px 10px', borderRadius: '20px' }}>
-      {st.label}
-    </span>
-  );
+const CalendarIcon = ({ color = '#2563EB', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+const ClockIcon = ({ color = '#F59E0B', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+const UsersIcon = ({ color = '#2563EB', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+const MessageIcon = ({ color = '#7C3AED', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const StarIcon = ({ color = '#F59E0B', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+const BarChartIcon = ({ color = '#059669', size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+  </svg>
+);
+
+const STATUS_CLASSES = {
+  pending:   'bg-amber-50 text-amber-800',
+  confirmed: 'bg-green-50 text-green-800',
+  completed: 'bg-blue-100 text-blue-800',
+  cancelled: 'bg-red-50 text-red-800',
 };
+const STATUS_LABELS = { pending: 'En attente', confirmed: 'Confirmé', completed: 'Terminé', cancelled: 'Annulé' };
 
 export default function DoctorDashboard() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const firstName = user?.first_name || 'Médecin';
-  const lastName = user?.last_name || '';
-  const initials = `${user?.first_name?.[0] || 'D'}${user?.last_name?.[0] || ''}`.toUpperCase();
+  const firstName = user?.firstName || user?.first_name || 'Médecin';
+  const lastName  = user?.lastName  || user?.last_name  || '';
 
-  useEffect(() => {
+  const loadStats = () => {
     doctorsAPI.getDashboardStats()
       .then(r => { setData(r.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
-
-  const handleLogout = () => { logout(); navigate('/login'); toast.success('Déconnecté !'); };
-
-  const navLinks = [
-    { id: 'dashboard', label: 'Tableau de bord', path: '/doctor' },
-    { id: 'appointments', label: 'Rendez-vous', path: '/doctor/appointments' },
-    { id: 'patients', label: 'Mes patients', path: '/doctor/patients' },
-    { id: 'messages', label: 'Messages', path: '/doctor/messages' },
-    { id: 'profile', label: 'Mon profil', path: '/doctor/profile' },
-  ];
-
-  const stats = data?.stats || {};
-  const upcoming = data?.upcoming || [];
-  const unreadMessages = stats.unread_messages || 0;
-
-  const s = {
-    root: { fontFamily: "'DM Sans', 'Segoe UI', sans-serif", backgroundColor: '#F0F9F8', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-    navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', flexShrink: 0 },
-    navInner: { maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', gap: '24px' },
-    logo: { fontSize: '24px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px', flexShrink: 0, textDecoration: 'none' },
-    logoAccent: { color: '#F97316' },
-    navLinks: { display: 'flex', gap: '4px', flex: 1 },
-    navLink: (active) => ({ padding: '7px 14px', borderRadius: '8px', fontSize: '14px', fontWeight: active ? '600' : '400', color: active ? '#0D9488' : '#64748B', backgroundColor: active ? '#CCFBF1' : 'transparent', textDecoration: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }),
-    navRight: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
-    userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px 6px 6px', borderRadius: '10px', border: '1.5px solid #E2E8F0', cursor: 'pointer', backgroundColor: '#fff' },
-    userAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg, #0D9488, #065a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff' },
-    dropdown: { position: 'absolute', top: '48px', right: 0, backgroundColor: '#fff', borderRadius: '14px', border: '1.5px solid #E2E8F0', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '200px', zIndex: 200, overflow: 'hidden' },
-    dropdownItem: { padding: '12px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: '#0F172A' },
-    main: { flex: 1, maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '28px 32px', boxSizing: 'border-box' },
-    pageHeader: { marginBottom: '24px' },
-    pageTitle: { fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px' },
-    pageSubtitle: { fontSize: '14px', color: '#64748B', marginTop: '4px' },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '16px', marginBottom: '28px' },
-    statCard: (highlight) => ({ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: highlight ? '2px solid #0D9488' : '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }),
-    statIcon: { fontSize: '28px' },
-    statVal: (highlight) => ({ fontSize: '28px', fontWeight: '800', color: highlight ? '#0D9488' : '#0F172A', letterSpacing: '-1px' }),
-    statLabel: { fontSize: '13px', color: '#64748B', fontWeight: '500' },
-    card: { backgroundColor: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1.5px solid #E2E8F0', marginBottom: '20px' },
-    cardTitle: { fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '18px' },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    th: { textAlign: 'left', padding: '10px 14px', fontSize: '12px', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #E2E8F0' },
-    td: { padding: '14px', fontSize: '14px', color: '#0F172A', borderBottom: '1px solid #F1F5F9' },
-    avatar: { width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #0D9488, #065a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' },
-    emptyState: { textAlign: 'center', padding: '40px 20px', color: '#94A3B8' },
-    loadingWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: '16px' },
   };
 
+  useEffect(() => {
+    loadStats();
+    // Auto-refresh toutes les 30 secondes pour voir les nouveaux RDV
+    const timer = setInterval(loadStats, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const stats    = data?.stats    || {};
+  const upcoming = data?.upcoming || [];
+
+  const statCards = [
+    { Icon: CalendarIcon, iconColor: '#2563EB', bg: 'bg-primary-50',  val: stats.todayAppointments ?? stats.today_appointments ?? 0, label: "RDV aujourd'hui", highlight: false },
+    { Icon: ClockIcon,    iconColor: '#F59E0B', bg: 'bg-amber-50',    val: stats.pendingAppointments ?? stats.pending_appointments ?? 0, label: 'En attente', highlight: (stats.pendingAppointments || stats.pending_appointments) > 0 },
+    { Icon: UsersIcon,    iconColor: '#2563EB', bg: 'bg-primary-50',  val: stats.totalPatients ?? stats.total_patients ?? 0, label: 'Patients total', highlight: false },
+    { Icon: MessageIcon,  iconColor: '#7C3AED', bg: 'bg-violet-50',   val: stats.unreadMessages ?? stats.unread_messages ?? 0, label: 'Messages non lus', highlight: (stats.unreadMessages || stats.unread_messages) > 0 },
+    { Icon: StarIcon,     iconColor: '#F59E0B', bg: 'bg-amber-50',    val: stats.ratingAvg ? `${parseFloat(stats.ratingAvg).toFixed(1)}/5` : '—', label: 'Note moyenne', highlight: false },
+    { Icon: BarChartIcon, iconColor: '#059669', bg: 'bg-green-50',    val: stats.totalAppointments ?? stats.total_appointments ?? 0, label: 'RDV total', highlight: false },
+  ];
+
   if (loading) return (
-    <div style={s.root}>
-      <div style={s.loadingWrap}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid #E2E8F0', borderTop: '3px solid #0D9488', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <p style={{ color: '#64748B', fontSize: '14px' }}>Chargement...</p>
-      </div>
+    <div className="font-sans bg-slate-50 min-h-screen flex items-center justify-center flex-col gap-4">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="w-9 h-9 border-[3px] border-slate-200 border-t-primary-600 rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
+      <p className="text-slate-500 text-sm">Chargement...</p>
     </div>
   );
 
   return (
-    <div style={s.root} onClick={() => setShowUserMenu(false)}>
-      {/* NAVBAR */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <Link to="/" style={s.logo}>Frey<span style={s.logoAccent}>a</span></Link>
-          <div style={s.navLinks}>
-            {navLinks.map(link => (
-              <Link key={link.id} to={link.path} style={s.navLink(link.id === 'dashboard')}>
-                {link.label}
-                {link.id === 'messages' && unreadMessages > 0 && (
-                  <span style={{ backgroundColor: '#EF4444', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '10px' }}>{unreadMessages}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-          <div style={s.navRight}>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={s.userBtn} onClick={() => setShowUserMenu(!showUserMenu)}>
-                <div style={s.userAvatar}>{initials}</div>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#0F172A' }}>Dr. {lastName}</span>
-                <span style={{ fontSize: '10px', color: '#94A3B8' }}>▼</span>
-              </div>
-              {showUserMenu && (
-                <div style={s.dropdown}>
-                  <div style={{ padding: '14px 16px', borderBottom: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>Dr. {firstName} {lastName}</div>
-                    <div style={{ fontSize: '12px', color: '#64748B' }}>{user?.email}</div>
-                  </div>
-                  {[
-                    { icon: '👤', label: 'Mon profil', path: '/doctor/profile' },
-                    { icon: '📅', label: 'Mes rendez-vous', path: '/doctor/appointments' },
-                    { icon: '💬', label: 'Messages', path: '/doctor/messages' },
-                  ].map((item, i) => (
-                    <div key={i} style={s.dropdownItem} onClick={() => navigate(item.path)}>
-                      <span>{item.icon}</span>{item.label}
-                    </div>
-                  ))}
-                  <div style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <div style={{ ...s.dropdownItem, color: '#EF4444' }} onClick={handleLogout}><span>🚪</span> Déconnexion</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="font-sans bg-slate-50 min-h-screen">
+      <DoctorNavbar active="dashboard" />
 
-      {/* MAIN */}
-      <div style={s.main}>
-        {/* Header */}
-        <div style={s.pageHeader}>
-          <h1 style={s.pageTitle}>Bonjour, Dr. {lastName} 👋</h1>
-          <p style={s.pageSubtitle}>
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — Voici un aperçu de votre activité aujourd'hui
+      <div className="max-w-6xl mx-auto px-6 py-7">
+        <div className="mb-6">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. {lastName}</h1>
+          <p className="text-sm text-slate-500 mt-1 capitalize">
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — Aperçu de votre activité
           </p>
         </div>
 
         {/* Stats */}
-        <div style={s.statsGrid}>
-          {[
-            { icon: '📅', val: stats.today_appointments || 0, label: "RDV aujourd'hui", highlight: false },
-            { icon: '⏳', val: stats.pending_appointments || 0, label: 'En attente', highlight: stats.pending_appointments > 0 },
-            { icon: '👥', val: stats.total_patients || 0, label: 'Patients total', highlight: false },
-            { icon: '💬', val: stats.unread_messages || 0, label: 'Messages non lus', highlight: stats.unread_messages > 0 },
-            { icon: '⭐', val: stats.rating_avg?.rating_avg ? `${parseFloat(stats.rating_avg.rating_avg).toFixed(1)}/5` : '—', label: 'Note moyenne', highlight: false },
-            { icon: '📊', val: stats.total_appointments || 0, label: 'RDV total', highlight: false },
-          ].map((st, i) => (
-            <div key={i} style={s.statCard(st.highlight)}>
-              <div style={s.statIcon}>{st.icon}</div>
-              <div style={s.statVal(st.highlight)}>{st.val}</div>
-              <div style={s.statLabel}>{st.label}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          {statCards.map(({ Icon, iconColor, bg, val, label, highlight }, i) => (
+            <div
+              key={i}
+              className={`bg-white rounded-2xl p-5 flex flex-col gap-2.5 shadow-card border transition-transform hover:-translate-y-0.5 ${highlight ? 'border-primary-200' : 'border-slate-200'}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bg}`}>
+                <Icon color={iconColor} size={18} />
+              </div>
+              <div className={`text-3xl font-extrabold tracking-tight ${highlight ? 'text-primary-600' : 'text-slate-900'}`}>{val}</div>
+              <div className="text-xs text-slate-500 font-medium leading-snug">{label}</div>
             </div>
           ))}
         </div>
 
         {/* Upcoming appointments */}
-        <div style={s.card}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <h3 style={s.cardTitle}>📋 Prochains rendez-vous</h3>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-bold text-slate-900">Prochains rendez-vous</h3>
             <button
               onClick={() => navigate('/doctor/appointments')}
-              style={{ background: 'none', border: '1.5px solid #0D9488', color: '#0D9488', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-              Voir tout →
+              className="text-sm font-semibold text-primary-600 bg-white border border-slate-200 rounded-lg px-3.5 py-1.5 hover:bg-primary-50 transition-colors cursor-pointer font-sans"
+            >
+              Voir tout
             </button>
           </div>
+
           {upcoming.length === 0 ? (
-            <div style={s.emptyState}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📅</div>
-              <h3 style={{ color: '#64748B', fontWeight: '600' }}>Aucun rendez-vous à venir</h3>
-              <p style={{ fontSize: '13px' }}>Vos prochains créneaux apparaîtront ici</p>
+            <div className="flex flex-col items-center py-12 gap-3 text-center">
+              <CalendarIcon color="#CBD5E1" size={36} />
+              <p className="text-slate-600 font-semibold text-sm">Aucun rendez-vous à venir</p>
+              <p className="text-xs text-slate-400">Vos prochains créneaux apparaîtront ici</p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={s.table}>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr>
+                  <tr className="border-b border-slate-200">
                     {['Patient', 'Date', 'Heure', 'Motif', 'Statut'].map(h => (
-                      <th key={h} style={s.th}>{h}</th>
+                      <th key={h} className="text-left px-3.5 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {upcoming.map(a => (
-                    <tr key={a.id}>
-                      <td style={s.td}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={s.avatar}>{a.first_name?.[0]}{a.last_name?.[0]}</div>
-                          <span style={{ fontWeight: '500' }}>{a.first_name} {a.last_name}</span>
+                    <tr key={a.id} className="group hover:bg-primary-50/40 transition-colors">
+                      <td className="px-3.5 py-3.5 text-sm text-slate-900 border-b border-slate-100">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center text-[11px] font-bold text-primary-600 shrink-0">
+                            {a.patient?.firstName?.[0]}{a.patient?.lastName?.[0]}
+                          </div>
+                          <span className="font-medium">{a.patient?.firstName} {a.patient?.lastName}</span>
                         </div>
                       </td>
-                      <td style={s.td}>{new Date(a.appointment_date).toLocaleDateString('fr-FR')}</td>
-                      <td style={s.td}><strong>{a.appointment_time}</strong></td>
-                      <td style={{ ...s.td, color: '#64748B', fontSize: '13px' }}>{a.motif || '—'}</td>
-                      <td style={s.td}>{statusBadge(a.status)}</td>
+                      <td className="px-3.5 py-3.5 text-sm text-slate-700 border-b border-slate-100">{new Date(a.appointment_date).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-3.5 py-3.5 text-sm font-bold text-slate-900 border-b border-slate-100">{a.appointment_time}</td>
+                      <td className="px-3.5 py-3.5 text-sm text-slate-500 border-b border-slate-100">{a.motif || '—'}</td>
+                      <td className="px-3.5 py-3.5 border-b border-slate-100">
+                        <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_CLASSES[a.status] || 'bg-slate-100 text-slate-600'}`}>
+                          {STATUS_LABELS[a.status] || a.status}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

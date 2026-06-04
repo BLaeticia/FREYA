@@ -4,6 +4,34 @@ import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 
+const EyeIcon = ({ show }) => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {show ? (
+      <>
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </>
+    ) : (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    )}
+  </svg>
+);
+
+const ChevronRight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const ChevronLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
 export default function LoginPage() {
   const [mode, setMode] = useState('choice');
   const [form, setForm] = useState({ identifier: '', password: '' });
@@ -16,21 +44,22 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-
-      const res = await authAPI.loginUser({
-        email: form.identifier.includes('@') ? form.identifier : undefined,
-        phone: !form.identifier.includes('@') ? form.identifier : undefined,
-        password: form.password
-      });
-      
-      console.log('✅ Réponse login:', res.data);
+      const identifier = form.identifier.trim();
+      const payload = {
+        email: identifier.includes('@') ? identifier : undefined,
+        phone: !identifier.includes('@') ? identifier : undefined,
+        password: form.password,
+      };
+      const res = await authAPI.loginUser(payload);
       login(res.data.token, res.data.user);
       toast.success(`Bienvenue ${res.data.user.firstName} !`);
-      
       const role = res.data.user.role;
-      navigate(role === 'doctor' ? '/doctor' : role === 'admin' ? '/admin' : '/patient');
+      if (role === 'doctor')     navigate('/doctor');
+      else if (role === 'admin') navigate('/admin');
+      else if (role === 'laboratory') navigate('/labo');
+      else                       navigate('/patient');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur de connexion');
+      toast.error(err.response?.data?.error || 'Identifiants incorrects');
     } finally {
       setLoading(false);
     }
@@ -38,127 +67,174 @@ export default function LoginPage() {
 
   const fillDemo = (role) => {
     if (role === 'patient') setForm({ identifier: 'patient@freya.dz', password: 'password123' });
-    if (role === 'doctor') setForm({ identifier: 'dr.benali@freya.dz', password: 'password123' });
-    if (role === 'admin') setForm({ identifier: 'admin@freya.dz', password: 'admin123' });
+    if (role === 'doctor')  setForm({ identifier: 'dr.benali@freya.dz', password: 'password123' });
+    if (role === 'admin')   setForm({ identifier: 'admin@freya.dz', password: 'admin123' });
   };
 
-  const s = {
-    root: {
-       minHeight: '100vh',
-       fontFamily: "'DM Sans',sans-serif",
-       background: 'linear-gradient(135deg, #0F172A 0%, #0E4D6E 50%, #065a50 100%)',
-       display: 'flex', flexDirection: 'column'
-    },
+  const inputCls = 'w-full px-3.5 py-2.5 rounded-[9px] border-[1.5px] border-slate-200 text-sm text-slate-900 bg-slate-50 font-sans transition-all focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 focus:bg-white';
 
-    // CHOICE
-    // Styles pour le mode "Choice" (Image 8 style)
-    choiceBody: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
-    choiceCard: { backgroundColor: '#fff', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' },
-    
-    // Styles pour le formulaire
-    loginCard: { backgroundColor: '#fff', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '420px', boxShadow: '0 25px 80px rgba(0,0,0,0.4)' },
-    title: { fontSize: '26px', fontWeight: '800', color: '#0F172A', marginBottom: '8px', textAlign: 'center' },
-    subTitle: { fontSize: '14px', color: '#64748B', marginBottom: '24px', textAlign: 'center' },
-    
-    label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', letterSpacing: '0.5px', marginBottom: '8px', textTransform: 'uppercase' },
-    input: { width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '15px', marginBottom: '20px', outline: 'none', boxSizing: 'border-box', backgroundColor: '#F8FAFC' },
-    
-    primaryBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #0D9488, #065a50)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(13, 148, 136, 0.3)' },
-    secondaryBtn: { width: '100%', padding: '14px', backgroundColor: '#fff', color: '#0D9488', border: '2px solid #0D9488', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '12px' },
-    
-    roleBadge: { display: 'inline-block', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', marginBottom: '16px', backgroundColor: '#CCFBF1', color: '#0D9488' },
-  };
-
-  const Logo = () => (
-    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-      <span style={{ fontSize: '32px', fontWeight: '800', color: '#fff' }}>
-        Frey<span style={{ color: '#F97316' }}>a</span>
-      </span>
-    </div>
-  );
-
-  // --- VUE CHOIX (PATIENT OU PRO) ---
-  if (mode === 'choice') {
-    return (
-      <div style={s.root}>
-        <div style={s.choiceBody}>
-          <div style={s.choiceCard}>
-            <div style={{...s.title, color: '#0D9488'}}>Bienvenue sur Freya</div>
-            <p style={s.subTitle}>Choisissez votre espace pour continuer</p>
-            
-            <div style={{ marginBottom: '30px' }}>
-                <div style={{ fontWeight: '700', marginBottom: '10px' }}>🧑 Vous êtes un patient ?</div>
-                <button style={s.primaryBtn} onClick={() => setMode('patient')}>Accéder à mon espace</button>
-                <button style={s.secondaryBtn} onClick={() => navigate('/register')}>Créer un compte</button>
-            </div>
-
-            <hr style={{ border: '0', borderTop: '1px solid #E2E8F0', margin: '20px 0' }} />
-
-            <div>
-                <div style={{ fontWeight: '700', marginBottom: '10px', color: '#0F172A' }}>👨‍⚕️ Vous êtes un professionnel ?</div>
-                <button style={{ ...s.primaryBtn, background: '#0F172A' }} onClick={() => setMode('doctor')}>Espace Praticien</button>
-            </div>
+  return (
+    <div className="font-sans flex min-h-screen">
+      {/* Left — branding */}
+      <div className="hidden md:flex w-[44%] bg-gradient-to-br from-blue-900 via-primary-700 to-primary-600 items-center justify-center px-14 py-16 shrink-0 relative overflow-hidden">
+        <div className="relative z-10 max-w-sm">
+          <div className="text-3xl font-extrabold text-white mb-12 tracking-tight">Freya</div>
+          <h1 className="text-5xl font-extrabold text-white leading-tight mb-4 tracking-tighter">
+            Votre santé,<br />simplifiée.
+          </h1>
+          <p className="text-[15px] text-white/70 leading-relaxed mb-11">
+            Prenez rendez-vous chez un médecin en quelques clics et consultez vos résultats depuis votre espace sécurisé.
+          </p>
+          <div className="flex flex-col gap-3.5">
+            {['Rendez-vous médicaux en ligne', "Résultats d'analyses accessibles", 'Messagerie avec votre médecin', 'Dossier médical centralisé'].map((f, i) => (
+              <div key={i} className="flex items-center gap-3 text-white/85 text-sm font-medium">
+                <div className="w-[7px] h-[7px] rounded-full bg-blue-300 shrink-0" />
+                <span>{f}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    );
-  }
 
-  // --- VUE FORMULAIRE DE CONNEXION ---
-  return (
-    <div style={s.root}>
-      <div style={{ padding: '20px' }}>
-        <button 
-          onClick={() => setMode('choice')}
-          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: '600' }}
-        >
-          ← Retour
-        </button>
-      </div>
-      
-      <div style={s.choiceBody}>
-        <div style={s.loginCard}>
-          <div style={s.roleBadge}>{mode === 'doctor' ? 'PRO' : 'PATIENT'}</div>
-          <div style={s.title}>Connexion</div>
-          <p style={s.subTitle}>Heureux de vous revoir !</p>
+      {/* Right — form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-10 bg-white">
+        <div className="w-full max-w-[400px]">
 
-          <form onSubmit={handleSubmit}>
-            <label style={s.label}>Email ou Téléphone</label>
-            <input 
-              style={s.input} 
-              type="text" 
-              placeholder="Ex: 0550... ou nom@mail.com"
-              value={form.identifier}
-              onChange={e => setForm({ ...form, identifier: e.target.value })}
-              required
-            />
+          {mode === 'choice' ? (
+            <>
+              <div className="text-[28px] font-extrabold text-slate-900 mb-1.5 tracking-tight">Connexion</div>
+              <p className="text-sm text-slate-500 mb-7">Choisissez votre espace pour continuer</p>
 
-            <label style={s.label}>Mot de passe</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                style={s.input} 
-                type={showPassword ? "text" : "password"} 
-                placeholder="••••••••"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                required
-              />
-              <span 
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '15px', top: '15px', cursor: 'pointer' }}
+              <div className="flex flex-col gap-3 mb-7">
+                {[
+                  { title: 'Espace Patient', sub: 'Prenez rendez-vous, consultez vos résultats', onClick: () => setMode('patient') },
+                  { title: 'Espace Professionnel', sub: 'Gérez vos rendez-vous et patients', onClick: () => setMode('doctor') },
+                ].map(({ title, sub, onClick }) => (
+                  <button
+                    key={title}
+                    onClick={onClick}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border-[1.5px] border-slate-200 bg-white text-left transition-all cursor-pointer hover:border-primary-600 hover:bg-primary-50 font-sans"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-900 text-sm mb-0.5">{title}</div>
+                      <div className="text-[13px] text-slate-500">{sub}</div>
+                    </div>
+                    <ChevronRight />
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-medium px-2">ou</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              <div className="mt-5 text-center text-[13px] text-slate-500">
+                Pas encore de compte ?{' '}
+                <Link to="/register" className="text-primary-600 font-semibold no-underline hover:underline">Créer un compte</Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                className="flex items-center gap-1.5 bg-transparent border-0 text-slate-500 text-[13px] font-semibold cursor-pointer p-0 mb-6 hover:text-slate-900 transition-colors font-sans"
+                onClick={() => setMode('choice')}
               >
-                {showPassword ? '🙈' : '👁️'}
-              </span>
-            </div>
+                <ChevronLeft /> Retour
+              </button>
 
-            <button type="submit" style={s.primaryBtn} disabled={loading}>
-              {loading ? 'Connexion...' : 'Se connecter'}
-            </button>
-          </form>
+              <div className="text-[28px] font-extrabold text-slate-900 mb-1.5 tracking-tight">
+                {mode === 'doctor' ? 'Espace Professionnel' : 'Espace Patient'}
+              </div>
+              <p className="text-sm text-slate-500 mb-7">Heureux de vous revoir</p>
 
-          <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#64748B' }}>
-            Pas encore de compte ? <Link to="/register" style={{ color: '#0D9488', fontWeight: '700' }}>S'inscrire</Link>
-          </div>
+              {/* Demo credentials */}
+              <div className="bg-primary-50 border border-primary-200 rounded-[10px] p-3 mb-5">
+                <div className="text-[10px] font-bold text-primary-700 mb-2 uppercase tracking-wider">Identifiants de démonstration</div>
+                <div className="flex gap-2 flex-wrap">
+                  {mode === 'patient' && (
+                    <button
+                      className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
+                      onClick={() => fillDemo('patient')}
+                    >
+                      patient@freya.dz / password123
+                    </button>
+                  )}
+                  {mode === 'doctor' && (
+                    <>
+                      <button
+                        className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
+                        onClick={() => fillDemo('doctor')}
+                      >
+                        dr.benali@freya.dz / password123
+                      </button>
+                      <button
+                        className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
+                        onClick={() => setForm({ identifier: 'labo.pasteur@freya.dz', password: 'labo123' })}
+                      >
+                        labo.pasteur@freya.dz / labo123
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
+                    onClick={() => fillDemo('admin')}
+                  >
+                    admin@freya.dz / admin123
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Email ou téléphone</label>
+                  <input
+                    type="text"
+                    placeholder="votre@email.com ou 06XXXXXXXX"
+                    value={form.identifier}
+                    onChange={e => setForm({ ...form, identifier: e.target.value })}
+                    required
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                      required
+                      className={`${inputCls} pr-11`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 flex items-center p-1"
+                    >
+                      <EyeIcon show={showPassword} />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-primary-600 text-white border-0 rounded-[10px] text-[15px] font-bold cursor-pointer mt-2 hover:bg-primary-700 transition-colors font-sans disabled:opacity-60"
+                >
+                  {loading ? 'Connexion en cours...' : 'Se connecter'}
+                </button>
+              </form>
+
+              <div className="mt-5 text-center text-[13px] text-slate-500">
+                Pas encore de compte ?{' '}
+                <Link to="/register" className="text-primary-600 font-semibold no-underline hover:underline">S'inscrire</Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

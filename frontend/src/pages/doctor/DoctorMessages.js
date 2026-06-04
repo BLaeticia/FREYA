@@ -1,154 +1,289 @@
-import React, { useEffect, useState, useRef } from 'react';
-import Sidebar from '../../components/Sidebar';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { messagesAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
+import DoctorNavbar from '../../components/DoctorNavbar';
+
+const SendIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+const MsgIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtConvTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'Hier';
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
 
 export default function DoctorMessages() {
   const { user } = useAuthStore();
   const [conversations, setConversations] = useState([]);
-  const [activeConv, setActiveConv] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMsg, setNewMsg] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [activeConv,    setActiveConv]    = useState(null);
+  const [messages,      setMessages]      = useState([]);
+  const [newMsg,        setNewMsg]        = useState('');
+  const [loading,       setLoading]       = useState(true);
+  const [sending,       setSending]       = useState(false);
+  const [search,        setSearch]        = useState('');
   const messagesEndRef = useRef(null);
+  const inputRef       = useRef(null);
 
-  useEffect(() => {
-    messagesAPI.getConversations().then(r => {
-      setConversations(r.data.conversations || []);
+  const totalUnread = conversations.reduce((sum, c) => sum + (c._count?.messages || 0), 0);
+
+  /* ─── Charger les conversations ─── */
+  const loadConversations = useCallback(async () => {
+    try {
+      const res = await messagesAPI.getConversations();
+      setConversations(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setConversations([]);
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
 
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  /* ─── Charger les messages ─── */
   useEffect(() => {
-    if (activeConv) {
-      messagesAPI.getMessages(activeConv.id).then(r => {
-        setMessages(r.data.messages || []);
-        scrollToBottom();
-      });
-    }
+    if (!activeConv) return;
+    messagesAPI.getMessages(activeConv.id).then(res => {
+      setMessages(Array.isArray(res.data) ? res.data : []);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+      setConversations(prev => prev.map(c =>
+        c.id === activeConv.id ? { ...c, _count: { messages: 0 } } : c
+      ));
+    }).catch(() => setMessages([]));
   }, [activeConv]);
 
-  useEffect(() => { scrollToBottom(); }, [messages]);
+  useEffect(() => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+  }, [messages]);
 
-  const scrollToBottom = () => { setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50); };
-
+  /* ─── Envoyer un message ─── */
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMsg.trim() || !activeConv) return;
+    const text = newMsg.trim();
     setSending(true);
+    setNewMsg('');
     try {
-      const res = await messagesAPI.sendMessage(activeConv.id, newMsg);
+      const res = await messagesAPI.sendMessage(activeConv.id, text);
       setMessages(prev => [...prev, res.data]);
-      setNewMsg('');
-      setConversations(prev => prev.map(c => c.id === activeConv.id ? { ...c, last_message: newMsg, unread_count: 0 } : c));
-    } catch { toast.error('Erreur envoi message'); }
-    finally { setSending(false); }
+      setConversations(prev => prev.map(c =>
+        c.id === activeConv.id
+          ? { ...c, messages: [{ content: text, createdAt: new Date().toISOString() }] }
+          : c
+      ));
+    } catch {
+      toast.error("Erreur lors de l'envoi");
+      setNewMsg(text);
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
   };
 
-  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+  /* ─── Helpers ─── */
+  const patInitials = (conv) => {
+    const f = conv.patient?.firstName || '';
+    const l = conv.patient?.lastName  || '';
+    return `${f[0] || ''}${l[0] || ''}`.toUpperCase() || 'Pa';
+  };
+  const patName = (conv) =>
+    `${conv.patient?.firstName || ''} ${conv.patient?.lastName || ''}`.trim() || 'Patient';
+
+  const filtered = conversations.filter(c => {
+    const name = patName(c).toLowerCase();
+    return name.includes(search.toLowerCase());
+  });
+
+  const avatarColor = (name) => {
+    const colors = ['#2563EB', '#7C3AED', '#059669', '#D97706', '#DC2626', '#0284C7'];
+    return colors[(name?.charCodeAt(0) || 0) % colors.length];
+  };
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar unreadMessages={totalUnread} />
-      <div className="main-content">
-        <div className="topbar">
-          <span className="topbar-title">Messagerie</span>
-        </div>
-        <div className="page-content" style={{ padding: 0, display: 'flex', height: 'calc(100vh - 64px)' }}>
-          {/* Conversations list */}
-          <div style={{ width: '300px', borderRight: '1.5px solid var(--sand)', overflowY: 'auto', background: 'white' }}>
-            <div style={{ padding: '20px 16px 12px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Conversations {totalUnread > 0 && <span className="badge badge-teal" style={{ marginLeft: '8px' }}>{totalUnread}</span>}
+    <div className="font-sans bg-slate-50 h-screen flex flex-col overflow-hidden">
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+      `}</style>
+
+      <DoctorNavbar active="messages" />
+
+      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-4 flex gap-4 overflow-hidden">
+
+        {/* Sidebar */}
+        <aside className="w-72 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col shrink-0 overflow-hidden">
+          <div className="px-4 py-4 border-b border-slate-100 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900">Messagerie</h2>
+              {totalUnread > 0 && (
+                <span className="text-[11px] font-bold bg-primary-50 text-primary-600 px-2.5 py-0.5 rounded-full">
+                  {totalUnread}
+                </span>
+              )}
             </div>
-            {loading && <div className="loading-page"><div className="spinner"/></div>}
-            {conversations.length === 0 && !loading && (
-              <div className="empty-state" style={{ padding: '40px 20px' }}>
-                <div className="empty-icon">💬</div>
-                <h3>Aucune conversation</h3>
-              </div>
-            )}
-            {conversations.map(conv => (
-              <div key={conv.id} onClick={() => setActiveConv(conv)}
-                style={{ padding: '16px', borderBottom: '1px solid var(--sand)', cursor: 'pointer', background: activeConv?.id === conv.id ? 'var(--teal-bg)' : 'white', display: 'flex', gap: '12px', alignItems: 'center', transition: 'background 0.15s' }}>
-                <div className="avatar avatar-md" style={{ background: `hsl(${conv.other_first?.charCodeAt(0) * 10 || 160}, 60%, 40%)` }}>
-                  {conv.other_first?.[0]}{conv.other_last?.[0]}
-                </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{conv.other_first} {conv.other_last}</span>
-                    {conv.unread_count > 0 && <span className="badge badge-teal" style={{ fontSize: '0.7rem' }}>{conv.unread_count}</span>}
-                  </div>
-                  {conv.last_message && <p style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>{conv.last_message}</p>}
-                </div>
-              </div>
-            ))}
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              <SearchIcon />
+              <input
+                className="flex-1 border-none outline-none text-[13px] bg-transparent text-slate-900 placeholder-slate-400"
+                placeholder="Rechercher un patient..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Chat area */}
-          {activeConv ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              {/* Chat header */}
-              <div style={{ padding: '16px 24px', borderBottom: '1.5px solid var(--sand)', display: 'flex', alignItems: 'center', gap: '12px', background: 'white' }}>
-                <div className="avatar avatar-md">{activeConv.other_first?.[0]}{activeConv.other_last?.[0]}</div>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{activeConv.other_first} {activeConv.other_last}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Patient</div>
-                </div>
+          <div className="overflow-y-auto flex-1">
+            {loading && (
+              <div className="flex justify-center p-8">
+                <div className="w-6 h-6 border-2 border-slate-200 border-t-primary-600 rounded-full" style={{ animation: 'spin 0.8s linear infinite' }} />
               </div>
+            )}
+            {!loading && filtered.length === 0 && (
+              <div className="text-center px-4 py-10 text-slate-400 text-sm">
+                {conversations.length === 0 ? 'Aucune conversation pour le moment.' : 'Aucun résultat'}
+              </div>
+            )}
+            {filtered.map(conv => {
+              const color    = avatarColor(conv.patient?.firstName);
+              const isActive = activeConv?.id === conv.id;
+              const unread   = conv._count?.messages || 0;
+              const lastMsg  = conv.messages?.[0];
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => setActiveConv(conv)}
+                  className={`px-3.5 py-3 cursor-pointer flex items-center gap-2.5 border-l-[3px] transition-colors hover:bg-slate-50 ${
+                    isActive ? 'bg-primary-50 border-l-primary-600' : 'bg-transparent border-l-transparent'
+                  }`}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{ backgroundColor: color + '18', color }}
+                  >
+                    {patInitials(conv)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[13px] font-semibold text-slate-900 truncate">{patName(conv)}</span>
+                      {unread > 0 && (
+                        <span className="bg-primary-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 ml-1 shrink-0">
+                          {unread}
+                        </span>
+                      )}
+                    </div>
+                    {lastMsg && (
+                      <p className="text-xs text-slate-500 truncate">{lastMsg.content}</p>
+                    )}
+                  </div>
+                  {lastMsg && (
+                    <span className="text-[11px] text-slate-400 shrink-0">{fmtConvTime(lastMsg.createdAt)}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
 
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--cream)' }}>
-                {messages.map(msg => {
-                  const isMine = msg.sender_id === user?.id;
-                  return (
-                    <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-                      {!isMine && <div className="avatar avatar-sm" style={{ marginRight: '8px', marginTop: '4px' }}>{msg.first_name?.[0]}</div>}
-                      <div style={{ maxWidth: '70%' }}>
-                        <div style={{
-                          padding: '12px 16px', borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                          background: isMine ? 'var(--teal)' : 'white',
-                          color: isMine ? 'white' : 'var(--text)',
-                          fontSize: '0.9rem', lineHeight: '1.5',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                        }}>
-                          {msg.content}
+        {/* Chat area */}
+        {activeConv ? (
+          <section className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-3 shrink-0">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                style={{ backgroundColor: avatarColor(activeConv.patient?.firstName) + '18', color: avatarColor(activeConv.patient?.firstName) }}
+              >
+                {patInitials(activeConv)}
+              </div>
+              <div>
+                <div className="text-[15px] font-bold text-slate-900">{patName(activeConv)}</div>
+                <div className="text-xs text-slate-400">Patient</div>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 px-6 py-5 overflow-y-auto flex flex-col bg-slate-50/50">
+              {messages.length === 0 && (
+                <div className="text-center text-[12px] text-slate-400 my-auto">Aucun message.</div>
+              )}
+              {messages.map((msg, i) => {
+                const mine = msg.senderId === user?.id;
+                return (
+                  <div key={msg.id || i} className="mb-3">
+                    <div className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+                      {!mine && (
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 mb-0.5"
+                          style={{ backgroundColor: avatarColor(msg.sender?.firstName) + '18', color: avatarColor(msg.sender?.firstName) }}
+                        >
+                          {msg.sender?.firstName?.[0]}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '4px', textAlign: isMine ? 'right' : 'left' }}>
-                          {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                      )}
+                      <div className={`max-w-[65%] px-4 py-2.5 text-sm leading-relaxed ${
+                        mine
+                          ? 'bg-primary-600 text-white rounded-2xl rounded-br-sm'
+                          : 'bg-white text-slate-900 rounded-2xl rounded-bl-sm border border-slate-200'
+                      }`}>
+                        {msg.content}
                       </div>
                     </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
+                    <div className={`text-[10px] text-slate-400 mt-1 ${mine ? 'text-right' : 'text-left pl-8'}`}>
+                      {fmtTime(msg.createdAt)}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
 
-              {/* Input */}
-              <form onSubmit={sendMessage} style={{ padding: '16px 24px', background: 'white', borderTop: '1.5px solid var(--sand)', display: 'flex', gap: '12px' }}>
-                <input
-                  value={newMsg} onChange={e => setNewMsg(e.target.value)}
-                  placeholder="Écrire un message..."
-                  style={{ flex: 1, padding: '12px 18px', border: '1.5px solid var(--sand)', borderRadius: '50px', fontFamily: 'DM Sans, sans-serif', fontSize: '0.9rem', outline: 'none' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--teal)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--sand)'}
-                />
-                <button type="submit" disabled={sending || !newMsg.trim()} className="btn btn-primary" style={{ borderRadius: '50px', paddingInline: '24px' }}>
-                  {sending ? '...' : '➤'}
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cream)' }}>
-              <div className="empty-state">
-                <div className="empty-icon">💬</div>
-                <h3>Sélectionnez une conversation</h3>
-                <p>Choisissez un patient dans la liste pour commencer</p>
-              </div>
-            </div>
-          )}
-        </div>
+            {/* Input */}
+            <form onSubmit={sendMessage} className="px-4 py-3 border-t border-slate-100 flex gap-2.5 items-center shrink-0">
+              <input
+                ref={inputRef}
+                value={newMsg}
+                onChange={e => setNewMsg(e.target.value)}
+                placeholder={`Écrire à ${patName(activeConv)}...`}
+                className="flex-1 px-4 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-900 outline-none font-sans placeholder-slate-400 focus:border-primary-300 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={sending || !newMsg.trim()}
+                className={`flex items-center gap-1.5 bg-primary-600 text-white border-0 rounded-full px-5 py-2.5 text-[13px] font-semibold cursor-pointer shrink-0 font-sans hover:bg-primary-700 transition-colors ${(!newMsg.trim() || sending) ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                <SendIcon /> {sending ? 'Envoi...' : 'Envoyer'}
+              </button>
+            </form>
+          </section>
+        ) : (
+          <section className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-card flex flex-col items-center justify-center gap-3">
+            <MsgIcon />
+            <p className="text-slate-600 font-semibold text-[15px]">Sélectionnez une conversation</p>
+            <p className="text-slate-400 text-sm">Choisissez un patient dans la liste pour commencer</p>
+          </section>
+        )}
       </div>
     </div>
   );

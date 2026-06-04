@@ -1,69 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { auth } = require('../middleware/auth');
+const authController = require('../controllers/authController');
 
-const prisma = new PrismaClient();
 
-<<<<<<< HEAD
-// ─── INSCRIPTION (Register) ───
-<<<<<<< HEAD
-// ─── INSCRIPTION (Register) ───
-router.post('/register', async (req, res) => {
-=======
-=======
 // ─── INSCRIPTION ───
->>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
 router.post(['/register', '/register/patient'], async (req, res) => {
->>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
   try {
     const { email, phone, firstName, lastName, password, role } = req.body;
 
-<<<<<<< HEAD
-    // ... (ton code de vérification d'existant reste le même)
+    const conditions = [];
+    if (email) conditions.push({ email });
+    if (phone) conditions.push({ phone });
 
-=======
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email || undefined },
-          { phone: phone || undefined }
-        ].filter(Boolean)
-      }
-    });
+    if (conditions.length === 0) {
+      return res.status(400).json({ error: "Email ou téléphone requis." });
+    }
 
+    const existingUser = await prisma.user.findFirst({ where: { OR: conditions } });
     if (existingUser) {
       return res.status(400).json({ error: "Cet email ou numéro de téléphone est déjà utilisé." });
     }
 
->>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         email: email || null,
         phone: phone || null,
-<<<<<<< HEAD
-<<<<<<< HEAD
-        password: hashedPassword,
-        firstName: firstName,   // Changé de first_name à firstName
-        lastName: lastName,     // Changé de last_name à lastName
-       birth_date: new Date(birthDate),  // Changé de birth_date à birthDate
-        gender: gender,
-        role: role || 'patient'
-=======
-        firstName: firstName,
-        lastName: lastName,
-=======
         firstName,
         lastName,
->>>>>>> c514d174f3420419375be94dd4c231ca1414b12f
         password: hashedPassword,
         role: role || 'patient',
         isActive: true,
-        isVerified: false
->>>>>>> 46c9b642d471240671036c70042eb1f14e89cc38
+        isVerified: false,
+        patientProfile: (role === 'patient' || !role) ? { create: {} } : undefined,
       }
     });
 
@@ -71,8 +45,8 @@ router.post(['/register', '/register/patient'], async (req, res) => {
       data: {
         userId: user.id,
         type: 'registration',
-        title: 'Bienvenue sur Freya ! 🎉',
-        body: `Bonjour ${firstName}, votre compte patient est créé avec succès.`,
+        title: 'Bienvenue sur Freya !',
+        body: `Bonjour ${firstName}, votre compte est créé avec succès.`,
       }
     });
 
@@ -86,34 +60,74 @@ router.post(['/register', '/register/patient'], async (req, res) => {
 // ─── CONNEXION ───
 router.post('/login', async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
+    const { email: rawEmail, phone: rawPhone, password } = req.body;
+    const email = rawEmail?.trim() || null;
+    const phone = rawPhone?.trim() || null;
+    console.log(`[LOGIN] email="${email}" phone="${phone}" password="${password ? '***' : 'VIDE'}"`);
 
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email || undefined },
-          { phone: phone || undefined }
-        ].filter(Boolean)
-      }
-    });
+    if (!email && !phone) {
+      return res.status(400).json({ error: "Email ou téléphone requis." });
+    }
 
-    if (!user) return res.status(401).json({ error: "Identifiants incorrects." });
+    // $queryRaw — bypass de la validation enum Prisma pour supporter tous les rôles
+    let rows;
+    if (email) {
+      rows = await prisma.$queryRaw`
+        SELECT id, email, phone, role, "firstName", last_name AS "lastName",
+               password, is_active AS "isActive", is_verified AS "isVerified",
+               wilaya, clinic_id AS "clinicId"
+        FROM users WHERE email = ${email} LIMIT 1
+      `;
+    } else {
+      rows = await prisma.$queryRaw`
+        SELECT id, email, phone, role, "firstName", last_name AS "lastName",
+               password, is_active AS "isActive", is_verified AS "isVerified",
+               wilaya, clinic_id AS "clinicId"
+        FROM users WHERE phone = ${phone} LIMIT 1
+      `;
+    }
+
+    const user = rows?.[0];
+    if (!user) {
+      console.log('[LOGIN] 401 - utilisateur non trouvé');
+      return res.status(401).json({ error: "Identifiants incorrects." });
+    }
+    if (!user.isActive) return res.status(403).json({ error: "Compte désactivé." });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ error: "Identifiants incorrects." });
+    if (!validPassword) {
+      console.log('[LOGIN] 401 - mauvais mot de passe pour:', email || phone);
+      return res.status(401).json({ error: "Identifiants incorrects." });
+    }
+
+    if (user.role === 'doctor') {
+      const doctor = await prisma.doctor.findUnique({
+        where: { userId: user.id },
+        select: { adminApproved: true }
+      });
+      if (!doctor?.adminApproved) {
+        return res.status(403).json({ error: "Votre compte médecin est en attente de validation par l'administrateur." });
+      }
+    }
 
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET || 'votre_cle_secrete',
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRATION_IN || '24h' }
     );
 
     const { password: _, ...userWithoutPassword } = user;
+    console.log('[LOGIN] 200 OK - rôle:', user.role);
     res.json({ token, user: userWithoutPassword });
   } catch (error) {
     console.error("Erreur Login:", error);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
+
+// ─── ROUTES PROTÉGÉES ───
+router.get('/me', auth, authController.getMe);
+router.put('/profile', auth, authController.updateProfile);
+router.put('/password', auth, authController.changePassword);
 
 module.exports = router;

@@ -12,19 +12,13 @@ const auth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      // AJOUT : On sélectionne aussi le téléphone et on vérifie les noms de colonnes
-      select: { 
-        id: true, 
-        email: true,
-        phone: true,
-        role: true, 
-        firstName: true, 
-        lastName: true, 
-        isActive: true 
-      }
-    });
+    // $queryRaw — bypass de la validation enum Prisma pour supporter tous les rôles (incl. laboratory)
+    const rows = await prisma.$queryRaw`
+      SELECT id, email, phone, role, "firstName", last_name AS "lastName",
+             is_active AS "isActive", clinic_id AS "clinicId"
+      FROM users WHERE id = ${decoded.id} LIMIT 1
+    `;
+    const user = rows?.[0];
 
     if (!user) return res.status(401).json({ error: 'Utilisateur introuvable.' });
 

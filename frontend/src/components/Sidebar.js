@@ -82,7 +82,11 @@ export default function Sidebar({ unreadMessages = 0 }) {
       <style>{css}</style>
 
       {/* Logo */}
-      <div className="sb-logo">
+      <div 
+        className="sb-logo" 
+        onClick={() => navigate(links[0].to)} 
+        style={{ cursor: 'pointer' }}
+      >
         Freya<span className="sb-logo-dot">.</span>
       </div>
 

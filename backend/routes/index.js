@@ -28,8 +28,10 @@ recordsRouter.put('/profile',   auth, requireRole('patient'), recordController.u
 
 // Reviews
 const reviewsRouter = express.Router();
-reviewsRouter.post('/',               auth, requireRole('patient'), reviewController.addReview);
-reviewsRouter.get('/doctor/:doctorId',                              reviewController.getDoctorReviews);
+reviewsRouter.post('/',                             auth, requireRole('patient'), reviewController.addReview);
+reviewsRouter.get('/doctor/:doctorId',                                            reviewController.getDoctorReviews);
+reviewsRouter.get('/clinic/:clinicId',                                            reviewController.getClinicReviews);
+reviewsRouter.get('/has/:appointmentId',            auth,                         reviewController.hasReviewed);
 
 // Admin
 const adminRouter = express.Router();

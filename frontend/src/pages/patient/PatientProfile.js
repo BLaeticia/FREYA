@@ -1,230 +1,193 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
+import PatientNavbar from '../../components/PatientNavbar';
+
+const UserIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const ShieldIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+const LockIcon = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+const EditIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const CheckIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+  </svg>
+);
+const PillIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"/>
+    <circle cx="18" cy="18" r="3"/><path d="M16.5 16.5 19.5 19.5"/>
+  </svg>
+);
+const AlertTriangle = ({ color = '#D97706', size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
 
 export default function PatientProfile() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('infos');
   const [editing, setEditing] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const [profile, setProfile] = useState({
-    prenom: user?.first_name || 'Sara',
-    nom: user?.last_name || 'Amine',
-    email: user?.email || 'patient@freya.dz',
-    phone: user?.phone || '0555 123 456',
-    dob: '15/06/1995',
-    gender: 'Femme',
-    wilaya: 'Alger',
+    prenom: user?.firstName || user?.first_name || 'Sara',
+    nom:    user?.lastName  || user?.last_name  || 'Amine',
+    email:  user?.email || 'patient@freya.dz',
+    phone:  user?.phone || '0555 123 456',
+    dob: '15/06/1995', gender: 'Femme', wilaya: 'Alger',
     address: '12 Rue Didouche Mourad, Alger Centre',
-    bloodType: 'A+',
-    weight: '62',
-    height: '165',
-    allergies: 'Pénicilline',
-    antecedents: 'Hypertension légère',
-    mutuelle: 'CNAS',
+    bloodType: 'A+', weight: '62', height: '165',
+    allergies: 'Pénicilline', antecedents: 'Hypertension légère', mutuelle: 'CNAS',
   });
 
   const initials = `${profile.prenom?.[0] || 'P'}${profile.nom?.[0] || ''}`.toUpperCase();
+  const handleSave = () => { setEditing(false); toast.success('Profil mis à jour !'); };
 
-  const handleSave = () => {
-    setEditing(false);
-    toast.success('Profil mis à jour !');
-  };
-
-  const handleLogout = () => { logout(); navigate('/login'); toast.success('Déconnecté !'); };
-
-  const navLinks = [
-    { id: 'accueil', label: 'Accueil', path: '/patient' },
-    { id: 'rdv', label: 'Mes rendez-vous', path: '/patient/appointments' },
-    { id: 'medecins', label: 'Trouver un médecin', path: '/doctors' },
-    { id: 'messages', label: 'Messages', path: '/patient/messages' },
-    { id: 'dossier', label: 'Dossier médical', path: '/patient/dossier' },
+  const tabs = [
+    { id: 'infos',    label: 'Informations', Icon: UserIcon   },
+    { id: 'medical',  label: 'Medical',      Icon: ShieldIcon },
+    { id: 'securite', label: 'Securite',     Icon: LockIcon   },
   ];
 
+  const inputCls = "w-full px-3 py-2 rounded-lg bg-primary-50 border border-primary-200 text-sm text-slate-900 outline-none font-sans focus:border-primary-400 transition-colors";
+  const valueCls = "text-sm font-medium text-slate-900 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg";
+
   const Field = ({ label, field, type = 'text', options }) => (
-    <div style={s.field}>
-      <span style={s.fieldLabel}>{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
       {editing ? (
         options ? (
-          <select style={s.fieldInput} value={profile[field]} onChange={e => setProfile({ ...profile, [field]: e.target.value })}>
+          <select className={inputCls} value={profile[field]} onChange={e => setProfile({ ...profile, [field]: e.target.value })}>
             {options.map(o => <option key={o}>{o}</option>)}
           </select>
         ) : (
-          <input
-            type={type}
-            style={s.fieldInput}
-            value={profile[field]}
-            onChange={e => setProfile({ ...profile, [field]: e.target.value })}
-          />
+          <input type={type} className={inputCls} value={profile[field]} onChange={e => setProfile({ ...profile, [field]: e.target.value })} />
         )
       ) : (
-        <div style={s.fieldValue}>{profile[field] || '—'}</div>
+        <div className={valueCls}>{profile[field] || '—'}</div>
       )}
     </div>
   );
 
   return (
-    <div style={s.root} onClick={() => setShowUserMenu(false)}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        .nav-link:hover { background-color: #F1F5F9 !important; }
-        .dropdown-item:hover { background-color: #F8FAFC; }
-        .tab-btn:hover { background-color: #F1F5F9 !important; color: #0F172A !important; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .fade-up { animation: fadeUp 0.22s ease; }
-        input:focus, select:focus { border-color: #0D9488 !important; box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
-      `}</style>
+    <div className="font-sans bg-slate-50 min-h-screen">
+      <PatientNavbar active="accueil" />
 
-      {/* ── NAVBAR ── */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <Link to="/" style={s.logo}>Frey<span style={s.logoAccent}>a</span></Link>
-          <div style={s.navLinks}>
-            {navLinks.map(link => (
-              <Link key={link.id} to={link.path} className="nav-link" style={s.navLink(false)}>
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div style={s.navRight}>
-            <button style={s.rdvBtn} onClick={() => navigate('/doctors')}>+ Prendre RDV</button>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={s.userBtn} onClick={() => setShowUserMenu(v => !v)}>
-                <div style={s.userAvatar}>{initials}</div>
-                <span style={s.userName}>{profile.prenom}</span>
-                <span style={{ fontSize: '10px', color: '#94A3B8' }}>▼</span>
-              </div>
-              {showUserMenu && (
-                <div style={s.dropdown}>
-                  <div style={s.dropdownHeader}>
-                    <div style={s.dropdownName}>{profile.prenom} {profile.nom}</div>
-                    <div style={s.dropdownEmail}>{profile.email}</div>
-                  </div>
-                  {[
-                    { icon: '📅', label: 'Mes rendez-vous', path: '/patient/appointments' },
-                    { icon: '💬', label: 'Messages', path: '/patient/messages' },
-                    { icon: '🗂️', label: 'Dossier médical', path: '/patient/dossier' },
-                  ].map((item, i) => (
-                    <div key={i} className="dropdown-item" style={s.dropdownItem} onClick={() => navigate(item.path)}>
-                      <span>{item.icon}</span>{item.label}
-                    </div>
-                  ))}
-                  <div style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <div className="dropdown-item" style={{ ...s.dropdownItem, color: '#EF4444' }} onClick={handleLogout}>
-                      <span>🚪</span> Déconnexion
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN ── */}
-      <div style={s.main}>
-
-        {/* Page Header */}
-        <div style={s.pageHeader}>
+      <div className="max-w-5xl mx-auto px-6 py-7">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 style={s.pageTitle}>👤 Mon Profil</h1>
-            <p style={s.pageSubtitle}>Gérez vos informations personnelles et médicales</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">Mon Profil</h1>
+            <p className="text-sm text-slate-500">Gérez vos informations personnelles et médicales</p>
           </div>
           <button
-            style={editing ? s.saveBtn : s.editBtn}
             onClick={editing ? handleSave : () => setEditing(true)}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer border font-sans transition-colors ${
+              editing
+                ? 'bg-primary-600 text-white border-0 hover:bg-primary-700'
+                : 'bg-white text-primary-600 border-primary-600 hover:bg-primary-50'
+            }`}
           >
-            {editing ? '✅ Sauvegarder' : '✏️ Modifier'}
+            {editing ? <><CheckIcon /> Sauvegarder</> : <><EditIcon /> Modifier</>}
           </button>
         </div>
 
-        {/* Hero Banner */}
-        <div style={s.hero}>
-          <div style={s.heroBg} />
-          <div style={s.heroContent}>
-            <div style={s.heroAvatar}>
+        {/* Hero card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-card mb-5 overflow-hidden">
+          <div className="h-16" style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)' }} />
+          <div className="flex items-end gap-5 px-6 pb-5" style={{ marginTop: '-36px' }}>
+            <div className="w-18 h-18 rounded-full bg-primary-600 border-4 border-white shadow-lg flex items-center justify-center text-xl font-extrabold text-white shrink-0" style={{ width: 72, height: 72 }}>
               {initials}
-              {editing && (
-                <div style={s.avatarEditOverlay}>📷</div>
-              )}
             </div>
-            <div style={s.heroInfo}>
-              <div style={s.heroName}>{profile.prenom} {profile.nom}</div>
-              <div style={s.heroSub}>{profile.email} · {profile.phone}</div>
-              <div style={s.heroBadges}>
-                <span style={s.badge('#EF4444', '#FEE2E2')}>🩸 {profile.bloodType}</span>
-                <span style={s.badge('#0D9488', '#CCFBF1')}>📍 {profile.wilaya}</span>
-                <span style={s.badge('#7C3AED', '#EDE9FE')}>👤 {profile.gender}</span>
-                <span style={s.badge('#D97706', '#FEF3C7')}>🎂 {profile.dob}</span>
-                <span style={s.badge('#2563EB', '#DBEAFE')}>🏥 {profile.mutuelle}</span>
+            <div className="pb-1">
+              <div className="text-lg font-extrabold text-slate-900">{profile.prenom} {profile.nom}</div>
+              <div className="text-sm text-slate-500 mt-0.5">{profile.email} · {profile.phone}</div>
+              <div className="flex gap-1.5 mt-2 flex-wrap">
+                {[
+                  { label: profile.bloodType, classes: 'bg-red-100 text-red-800' },
+                  { label: profile.wilaya,    classes: 'bg-primary-100 text-primary-800' },
+                  { label: profile.gender,    classes: 'bg-violet-100 text-violet-800' },
+                  { label: profile.mutuelle,  classes: 'bg-green-100 text-green-800' },
+                ].map((b, i) => (
+                  <span key={i} className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${b.classes}`}>{b.label}</span>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={s.tabs}>
-          {[
-            { id: 'infos', label: '👤 Informations' },
-            { id: 'medical', label: '🏥 Médical' },
-            { id: 'securite', label: '🔒 Sécurité' },
-          ].map(tab => (
+        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 mb-5 w-fit">
+          {tabs.map(({ id, label, Icon }) => (
             <button
-              key={tab.id}
-              className="tab-btn"
-              style={s.tab(activeTab === tab.id)}
-              onClick={() => setActiveTab(tab.id)}
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer border-0 font-sans ${
+                activeTab === id ? 'bg-primary-600 text-white' : 'text-slate-500 hover:text-primary-600'
+              }`}
             >
-              {tab.label}
+              <Icon size={12} /> {label}
             </button>
           ))}
         </div>
 
-        {/* ── TAB: Informations ── */}
+        {/* TAB: Informations */}
         {activeTab === 'infos' && (
-          <div className="fade-up" style={s.grid2}>
-            {/* Infos personnelles */}
-            <div style={s.card}>
-              <h3 style={s.cardTitle}>👤 Informations personnelles</h3>
-              <div style={s.fieldGrid}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Informations personnelles</h3>
+              <div className="grid grid-cols-2 gap-3.5 mb-4">
                 <Field label="Prénom" field="prenom" />
                 <Field label="Nom" field="nom" />
                 <Field label="Date de naissance" field="dob" />
                 <Field label="Genre" field="gender" options={['Homme', 'Femme']} />
                 <Field label="Téléphone" field="phone" type="tel" />
-                <Field label="Wilaya" field="wilaya" options={['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida', 'Tizi Ouzou', 'Sétif', 'Batna']} />
+                <Field label="Wilaya" field="wilaya" options={['Alger','Oran','Constantine','Annaba','Blida','Tizi Ouzou','Sétif','Batna']} />
               </div>
-              <div style={{ marginTop: '14px' }}>
-                <Field label="Adresse complète" field="address" />
-              </div>
+              <Field label="Adresse complète" field="address" />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="flex flex-col gap-4">
               {/* Vitals */}
-              <div style={s.card}>
-                <h3 style={s.cardTitle}>⚕️ Données vitales</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '16px' }}>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+                <h3 className="text-sm font-bold text-slate-900 mb-4">Données vitales</h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
                   {[
-                    { val: profile.bloodType, label: 'Groupe sanguin', color: '#EF4444', bg: '#FEF2F2', unit: '' },
-                    { val: profile.weight, label: 'Poids', color: '#0D9488', bg: '#F0FDF9', unit: 'kg' },
-                    { val: profile.height, label: 'Taille', color: '#2563EB', bg: '#EFF6FF', unit: 'cm' },
+                    { val: profile.bloodType, label: 'Groupe sanguin', classes: 'bg-red-50 text-red-800',        unit: '' },
+                    { val: profile.weight,    label: 'Poids',          classes: 'bg-primary-50 text-primary-800', unit: 'kg' },
+                    { val: profile.height,    label: 'Taille',         classes: 'bg-green-50 text-green-800',     unit: 'cm' },
                   ].map((v, i) => (
-                    <div key={i} style={{ backgroundColor: v.bg, borderRadius: '12px', padding: '14px', textAlign: 'center', border: `1.5px solid ${v.color}20` }}>
-                      <div style={{ fontSize: '24px', fontWeight: '800', color: v.color, letterSpacing: '-0.5px' }}>
-                        {v.val}<span style={{ fontSize: '12px' }}>{v.unit}</span>
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748B', marginTop: '3px' }}>{v.label}</div>
+                    <div key={i} className={`${v.classes} rounded-xl p-3.5 text-center`}>
+                      <div className="text-2xl font-extrabold tracking-tight">{v.val}<span className="text-xs">{v.unit}</span></div>
+                      <div className="text-[11px] text-slate-500 mt-1">{v.label}</div>
                     </div>
                   ))}
                 </div>
                 {editing && (
-                  <div style={s.fieldGrid}>
+                  <div className="grid grid-cols-2 gap-3">
                     <Field label="Poids (kg)" field="weight" type="number" />
                     <Field label="Taille (cm)" field="height" type="number" />
                   </div>
@@ -232,20 +195,20 @@ export default function PatientProfile() {
               </div>
 
               {/* Alertes */}
-              <div style={s.card}>
-                <h3 style={s.cardTitle}>⚠️ Alertes médicales</h3>
-                <div style={s.alertCard('#EF4444', '#FEF2F2')}>
-                  <span style={{ fontSize: '20px' }}>💊</span>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Alertes médicales</h3>
+                <div className="bg-red-50 rounded-xl px-3.5 py-3 mb-2.5 flex items-center gap-3">
+                  <PillIcon />
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#EF4444' }}>Allergie médicamenteuse</div>
-                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{profile.allergies}</div>
+                    <div className="text-sm font-bold text-red-600">Allergie médicamenteuse</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{profile.allergies}</div>
                   </div>
                 </div>
-                <div style={s.alertCard('#D97706', '#FFFBEB')}>
-                  <span style={{ fontSize: '20px' }}>📋</span>
+                <div className="bg-amber-50 rounded-xl px-3.5 py-3 flex items-center gap-3">
+                  <AlertTriangle color="#D97706" />
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#D97706' }}>Antécédents</div>
-                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{profile.antecedents}</div>
+                    <div className="text-sm font-bold text-amber-600">Antécédents</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{profile.antecedents}</div>
                   </div>
                 </div>
               </div>
@@ -253,75 +216,77 @@ export default function PatientProfile() {
           </div>
         )}
 
-        {/* ── TAB: Médical ── */}
+        {/* TAB: Médical */}
         {activeTab === 'medical' && (
-          <div className="fade-up" style={s.card}>
-            <h3 style={s.cardTitle}>🏥 Informations médicales</h3>
-            <div style={s.fieldGrid}>
-              <Field label="Groupe sanguin" field="bloodType" options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
-              <Field label="Mutuelle / Assurance" field="mutuelle" options={['CNAS', 'CASNOS', 'Privée', 'Aucune']} />
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Informations médicales</h3>
+            <div className="grid grid-cols-2 gap-3.5 mb-4">
+              <Field label="Groupe sanguin" field="bloodType" options={['A+','A-','B+','B-','AB+','AB-','O+','O-']} />
+              <Field label="Mutuelle / Assurance" field="mutuelle" options={['CNAS','CASNOS','Privée','Aucune']} />
               <Field label="Poids (kg)" field="weight" type="number" />
               <Field label="Taille (cm)" field="height" type="number" />
             </div>
-            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="flex flex-col gap-3.5">
               <Field label="Allergies connues" field="allergies" />
               <Field label="Antécédents médicaux" field="antecedents" />
             </div>
             {!editing && (
-              <div style={{ marginTop: '20px', padding: '14px', backgroundColor: '#F0FDF9', borderRadius: '12px', border: '1.5px solid #CCFBF1' }}>
-                <p style={{ fontSize: '13px', color: '#0D9488', fontWeight: '600' }}>
-                  💡 Pour mettre à jour vos informations médicales, cliquez sur <strong>Modifier</strong> en haut à droite.
+              <div className="mt-5 p-3.5 bg-primary-50 border border-primary-200 rounded-xl">
+                <p className="text-sm text-primary-700 font-semibold">
+                  Pour mettre à jour vos informations médicales, cliquez sur <strong>Modifier</strong> en haut à droite.
                 </p>
               </div>
             )}
           </div>
         )}
 
-        {/* ── TAB: Sécurité ── */}
+        {/* TAB: Sécurité */}
         {activeTab === 'securite' && (
-          <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={s.card}>
-              <h3 style={s.cardTitle}>📧 Informations de connexion</h3>
-              <div style={s.fieldGrid}>
-                <div style={s.field}>
-                  <span style={s.fieldLabel}>Adresse email</span>
-                  <div style={s.fieldValue}>{profile.email}</div>
+          <div className="flex flex-col gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Informations de connexion</h3>
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Adresse email</span>
+                  <div className={valueCls}>{profile.email}</div>
                 </div>
-                <div style={s.field}>
-                  <span style={s.fieldLabel}>Mot de passe</span>
-                  <div style={s.fieldValue}>••••••••••</div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mot de passe</span>
+                  <div className={valueCls}>••••••••••</div>
                 </div>
               </div>
             </div>
 
-            <div style={s.card}>
-              <h3 style={s.cardTitle}>🔑 Changer le mot de passe</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '480px' }}>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">Changer le mot de passe</h3>
+              <div className="flex flex-col gap-3.5 max-w-md">
                 {['Mot de passe actuel', 'Nouveau mot de passe', 'Confirmer le nouveau mot de passe'].map((label, i) => (
-                  <div key={i} style={s.field}>
-                    <span style={s.fieldLabel}>{label}</span>
-                    <input type="password" placeholder="••••••••" style={s.fieldInput} />
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+                    <input type="password" placeholder="••••••••" className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-900 outline-none font-sans focus:border-primary-400 transition-colors" />
                   </div>
                 ))}
                 <button
-                  style={s.saveBtn}
                   onClick={() => toast.success('Mot de passe modifié !')}
+                  className="self-start inline-flex items-center gap-2 bg-primary-600 text-white border-0 rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors mt-1"
                 >
-                  🔒 Mettre à jour le mot de passe
+                  <LockIcon size={13} /> Mettre à jour le mot de passe
                 </button>
               </div>
             </div>
 
-            <div style={{ ...s.card, border: '1.5px solid #FEE2E2' }}>
-              <h3 style={{ ...s.cardTitle, color: '#EF4444' }}>⚠️ Zone de danger</h3>
-              <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '16px' }}>
+            <div className="bg-white rounded-2xl border border-red-200 shadow-card p-5">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-red-500 mb-3">
+                <AlertTriangle color="#EF4444" /> Zone de danger
+              </h3>
+              <p className="text-sm text-slate-500 mb-4">
                 La suppression de votre compte est irréversible. Toutes vos données seront définitivement effacées.
               </p>
               <button
-                style={{ backgroundColor: '#FEF2F2', color: '#EF4444', border: '1.5px solid #FEE2E2', borderRadius: '9px', padding: '9px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
                 onClick={() => toast.error('Contactez le support pour supprimer votre compte.')}
+                className="inline-flex items-center gap-2 bg-red-50 text-red-500 border border-red-200 rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer font-sans hover:bg-red-100 transition-colors"
               >
-                🗑️ Supprimer mon compte
+                <TrashIcon /> Supprimer mon compte
               </button>
             </div>
           </div>
@@ -330,55 +295,3 @@ export default function PatientProfile() {
     </div>
   );
 }
-
-/* ─── STYLES ─── */
-const s = {
-  root: { fontFamily: "'DM Sans','Segoe UI',sans-serif", backgroundColor: '#F0F9F8', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.05)', flexShrink: 0 },
-  navInner: { maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '64px', display: 'flex', alignItems: 'center', gap: '20px' },
-  logo: { fontSize: '22px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px', textDecoration: 'none', flexShrink: 0 },
-  logoAccent: { color: '#F97316' },
-  navLinks: { display: 'flex', gap: '2px', flex: 1 },
-  navLink: () => ({ padding: '7px 13px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '500', color: '#64748B', textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all 0.15s' }),
-  navRight: { display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 },
-  rdvBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '9px', padding: '9px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 11px 5px 5px', borderRadius: '10px', border: '1.5px solid #E2E8F0', cursor: 'pointer', backgroundColor: '#fff' },
-  userAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#0D9488,#065F52)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff' },
-  userName: { fontSize: '13px', fontWeight: '600', color: '#0F172A' },
-  dropdown: { position: 'absolute', top: '50px', right: 0, backgroundColor: '#fff', borderRadius: '14px', border: '1.5px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0,0,0,0.10)', minWidth: '210px', zIndex: 300, overflow: 'hidden' },
-  dropdownHeader: { padding: '14px 16px', borderBottom: '1px solid #F1F5F9' },
-  dropdownName: { fontSize: '14px', fontWeight: '700', color: '#0F172A' },
-  dropdownEmail: { fontSize: '12px', color: '#94A3B8', marginTop: '2px' },
-  dropdownItem: { padding: '11px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', color: '#0F172A' },
-
-  main: { flex: 1, maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '28px 32px', boxSizing: 'border-box' },
-  pageHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' },
-  pageTitle: { fontSize: '26px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.5px' },
-  pageSubtitle: { fontSize: '14px', color: '#64748B', marginTop: '4px' },
-  editBtn: { background: '#fff', border: '1.5px solid #0D9488', color: '#0D9488', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  saveBtn: { background: 'linear-gradient(135deg,#0D9488,#065F52)', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-
-  hero: { backgroundColor: '#fff', borderRadius: '18px', border: '1.5px solid #E2E8F0', marginBottom: '20px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' },
-  heroBg: { height: '80px', background: 'linear-gradient(135deg,#0D9488,#2DD4BF)' },
-  heroContent: { display: 'flex', alignItems: 'flex-end', gap: '20px', padding: '0 28px 24px', marginTop: '-40px' },
-  heroAvatar: { width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg,#0D9488,#065F52)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '800', color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 14px rgba(13,148,136,0.3)', flexShrink: 0, position: 'relative', cursor: 'pointer' },
-  avatarEditOverlay: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#0D9488', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #fff' },
-  heroInfo: { paddingBottom: '4px' },
-  heroName: { fontSize: '20px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.3px' },
-  heroSub: { fontSize: '13px', color: '#64748B', marginTop: '3px' },
-  heroBadges: { display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' },
-  badge: (color, bg) => ({ fontSize: '11px', fontWeight: '600', color, backgroundColor: bg, padding: '4px 10px', borderRadius: '20px' }),
-
-  tabs: { display: 'flex', gap: '6px', backgroundColor: '#fff', padding: '6px', borderRadius: '14px', marginBottom: '20px', width: 'fit-content', border: '1.5px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' },
-  tab: (active) => ({ padding: '9px 20px', borderRadius: '10px', border: 'none', fontSize: '14px', fontWeight: active ? '700' : '500', color: active ? '#fff' : '#64748B', backgroundColor: active ? '#0D9488' : 'transparent', cursor: 'pointer', transition: 'all 0.15s' }),
-
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-  card: { backgroundColor: '#fff', borderRadius: '16px', padding: '22px', border: '1.5px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' },
-  cardTitle: { fontSize: '15px', fontWeight: '800', color: '#0F172A', marginBottom: '18px' },
-  fieldGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' },
-  field: { display: 'flex', flexDirection: 'column', gap: '5px' },
-  fieldLabel: { fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.4px' },
-  fieldValue: { fontSize: '14px', fontWeight: '500', color: '#0F172A', padding: '9px 13px', backgroundColor: '#F8FAFC', borderRadius: '9px', border: '1.5px solid #E2E8F0' },
-  fieldInput: { fontSize: '14px', fontWeight: '500', color: '#0F172A', padding: '9px 13px', backgroundColor: '#F0FDF9', borderRadius: '9px', border: '1.5px solid #99F6E4', outline: 'none', width: '100%', fontFamily: 'inherit', transition: 'border-color 0.15s' },
-  alertCard: (color, bg) => ({ backgroundColor: bg, border: `1.5px solid ${color}30`, borderRadius: '12px', padding: '12px 14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px' }),
-};

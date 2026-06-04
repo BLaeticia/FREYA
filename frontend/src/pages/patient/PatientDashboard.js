@@ -3,21 +3,67 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import { appointmentsAPI, notificationsAPI } from '../../services/api';
+import PatientNavbar from '../../components/PatientNavbar';
+
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+const BellIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+);
+const CalendarIcon = ({ color = '#64748B', size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+const ClockIcon = ({ color = '#64748B', size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+const UserIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const FolderIcon = ({ size = 16, color = '#2563EB' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+  </svg>
+);
+const ChevronRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
+);
+const ShieldIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+
+const STATUS_MAP = {
+  pending:   { label: 'En attente', classes: 'bg-amber-100 text-amber-800' },
+  confirmed: { label: 'Confirmé',   classes: 'bg-green-100 text-green-800' },
+  completed: { label: 'Terminé',    classes: 'bg-slate-100 text-slate-600' },
+  cancelled: { label: 'Annulé',     classes: 'bg-red-100 text-red-800' },
+};
 
 const PatientDashboard = () => {
-  const { user, logout } = useAuthStore();
-  
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
-  const [activeNav, setActiveNav] = useState('accueil');
 
   const firstName = user?.firstName || user?.first_name || 'Patient';
-  const lastName = user?.lastName || user?.last_name || '';
-  const initials = `${firstName[0] || 'P'}${lastName[0] || ''}`.toUpperCase();
+  const lastName  = user?.lastName  || user?.last_name  || '';
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -25,11 +71,8 @@ const PatientDashboard = () => {
           appointmentsAPI.getMyAppointments({ limit: 5 }),
           notificationsAPI.getAll(),
         ]);
-        if (apptRes.status === 'fulfilled') setAppointments(apptRes.value.data?.appointments || []);
-        if (notifRes.status === 'fulfilled') {
-        console.log('📬 Notifications reçues:', notifRes.value.data);
-        setNotifications(notifRes.value.data?.notifications || notifRes.value.data || []);
-         }
+        if (apptRes.status === 'fulfilled') setAppointments(Array.isArray(apptRes.value.data) ? apptRes.value.data : (apptRes.value.data?.appointments || []));
+        if (notifRes.status === 'fulfilled') setNotifications(notifRes.value.data?.notifications || notifRes.value.data || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,370 +83,217 @@ const PatientDashboard = () => {
   }, []);
 
   const upcoming = appointments.filter(a => ['pending', 'confirmed'].includes(a.status));
-  const past = appointments.filter(a => ['completed', 'cancelled'].includes(a.status));
   const unreadNotifs = notifications.filter(n => !n.isRead).length;
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    toast.success('Déconnecté avec succès');
-  };
-
-  const statusMap = {
-    pending:   { label: 'En attente', color: '#B45309', bg: '#FEF3C7', dot: '#F59E0B' },
-    confirmed: { label: 'Confirmé',   color: '#065F46', bg: '#D1FAE5', dot: '#10B981' },
-    completed: { label: 'Terminé',    color: '#475569', bg: '#F1F5F9', dot: '#94A3B8' },
-    cancelled: { label: 'Annulé',     color: '#991B1B', bg: '#FEE2E2', dot: '#EF4444' },
-  };
+  const nextAppt = upcoming[0];
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  const avatarColors = ['#0D9488', '#7C3AED', '#0284C7', '#D97706', '#DB2777', '#059669'];
-
-  const navLinks = [
-    { id: 'accueil',  label: 'Accueil',           path: '/patient' },
-    { id: 'rdv',      label: 'Mes rendez-vous',   path: '/patient/appointments' },
-    { id: 'medecins', label: 'Trouver un médecin', path: '/doctors' },
-    { id: 'messages', label: 'Messages',           path: '/patient/messages' },
-    { id: 'dossier',  label: 'Dossier médical',    path: '/patient/dossier' },
-    { id: 'favoris',  label: '❤ Favoris',          path: '/patient/favoris' },
-  ];
+  const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 
   const quickActions = [
-    { icon: '🔍', label: 'Rechercher', sub: 'Spécialité ou nom', color: '#0D9488', bg: '#F0FDFA', border: '#99F6E4', path: '/doctors' },
-    { icon: '📅', label: 'Mes RDV', sub: 'Gérer mon agenda', color: '#7C3AED', bg: '#FAF5FF', border: '#DDD6FE', path: '/patient/appointments' },
-    { icon: '📄', label: 'Documents', sub: 'Analyses & Ordonnances', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', path: '/patient/dossier' },
-    { icon: '👨‍👩‍👧‍👦', label: 'Ma famille', sub: 'Gérer mes proches', color: '#0284C7', bg: '#F0F9FF', border: '#BAE6FD', path: '/patient/profile' },
+    { label: 'Rechercher', sub: 'Spécialité ou nom',      path: '/doctors',               icon: <SearchIcon /> },
+    { label: 'Mes RDV',    sub: 'Gérer mon agenda',       path: '/patient/appointments',  icon: <CalendarIcon color="#2563EB" size={16} /> },
+    { label: 'Documents',  sub: 'Analyses & Ordonnances', path: '/patient/dossier',       icon: <FolderIcon /> },
+    { label: 'Mon profil', sub: 'Gérer mes informations', path: '/patient/profile',       icon: <UserIcon size={16} color="#2563EB" /> },
   ];
 
-  const nextAppt = upcoming[0];
-  const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-  console.log("Données de l'utilisateur connecté :", user);
-
   return (
-    <div style={s.root} onClick={() => { setShowUserMenu(false); setShowNotifs(false); }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        .nav-lnk { transition: all 0.15s ease; border-bottom: 2px solid transparent; }
-        .nav-lnk:hover { background-color: #F8FAFC !important; color: #0F172A !important; }
-        .appt-row { transition: all 0.2s ease; }
-        .appt-row:hover { background-color: #fff !important; transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .quick-card { transition: all 0.18s ease; }
-        .quick-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important; }
-        .pill-btn { transition: all 0.15s ease; border: none; outline: none; }
-        .pill-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .fade-in { animation: fadeSlide 0.4s ease both; }
-        @keyframes fadeSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .skeleton { animation: pulse 1.5s ease infinite; background: #E2E8F0; border-radius: 8px; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      `}</style>
+    <div className="font-sans bg-slate-50 min-h-screen" onClick={() => setShowNotifs(false)}>
+      <PatientNavbar active="accueil" />
 
-      {/* ══ NAVBAR ══ */}
-      <nav style={s.navbar}>
-        <div style={s.navInner}>
-          <Link to="/" style={s.logo}> Frey<span style={s.logoAccent}>a</span> </Link>
-          <div style={s.navLinks}>
-            {navLinks.map(link => (
-              <Link key={link.id} to={link.path} className="nav-lnk" style={s.navLink(activeNav === link.id)} onClick={() => setActiveNav(link.id)}>
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div style={s.navRight}>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <button style={s.iconBtn} onClick={() => { setShowNotifs(v => !v); setShowUserMenu(false); }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                {unreadNotifs > 0 && <span style={s.notifBadge}>{unreadNotifs}</span>}
-              </button>
-              
-              {showNotifs && (
-  <div style={s.notifDropdown} className="fade-in">
-    
-    {/* HEADER */}
-    <div style={{ padding: '14px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>Notifications</span>
-        {unreadNotifs > 0 && (
-          <span style={{ background: '#0D9488', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px' }}>
-            {unreadNotifs}
-          </span>
-        )}
-      </div>
-      {unreadNotifs > 0 && (
-        <button
-          style={{ fontSize: '11px', color: '#0D9488', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}
-          onClick={async () => {
-            await notificationsAPI.markAllRead();
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-          }}
+      <main className="max-w-6xl mx-auto px-6 py-6">
+
+        {/* Search bar */}
+        <div
+          className="flex items-center gap-3 bg-white border border-slate-200 shadow-card rounded-xl px-4 py-3 mb-5 cursor-pointer hover:border-primary-300 transition-colors"
+          onClick={() => navigate('/doctors')}
         >
-          Tout marquer lu
-        </button>
-      )}
-    </div>
-
-    {/* LISTE */}
-    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-      {notifications.length === 0 ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
-          Aucune notification
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder="Nom du médecin, spécialité, ville..."
+            className="flex-1 border-none outline-none text-sm text-slate-900 bg-transparent font-sans cursor-pointer placeholder-slate-400"
+            readOnly
+          />
+          <button
+            className="bg-primary-600 text-white border-0 px-4 py-1.5 rounded-lg text-sm font-semibold cursor-pointer font-sans hover:bg-primary-700 transition-colors"
+            onClick={e => { e.stopPropagation(); navigate('/doctors'); }}
+          >
+            Rechercher
+          </button>
         </div>
-      ) : (
-        notifications.slice(0, 5).map((n, i) => {
-          const typeConfig = {
-            registration:       { icon: '🎉', bg: '#CCFBF1', color: '#0D9488' },
-            new_appointment:    { icon: '📅', bg: '#DBEAFE', color: '#2563EB' },
-            appointment_update: { icon: '📅', bg: '#FEF3C7', color: '#D97706' },
-            new_message:        { icon: '💬', bg: '#F3E8FF', color: '#7C3AED' },
-            new_record:         { icon: '📄', bg: '#ECFDF5', color: '#059669' },
-            reminder:           { icon: '⏰', bg: '#FEF3C7', color: '#D97706' },
-            admin_decision:     { icon: '⚙️', bg: '#F1F5F9', color: '#475569' },
-          };
-          const cfg = typeConfig[n.type] || { icon: '🔔', bg: '#F1F5F9', color: '#475569' };
-          return (
-            <div key={i} style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '12px', alignItems: 'flex-start', backgroundColor: n.isRead ? '#fff' : '#F0FDFA' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>
-                {cfg.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: n.isRead ? '400' : '600', color: '#0F172A', marginBottom: '2px' }}>{n.title}</div>
-                {n.body && <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.4' }}>{n.body}</div>}
-                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>{new Date(n.createdAt).toLocaleDateString('fr-FR')}</div>
-              </div>
-              {!n.isRead && (
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0D9488', flexShrink: 0, marginTop: '4px' }} />
-              )}
-            </div>
-          );
-        })
-      )}
-    </div>
 
-    {/* FOOTER */}
-   <div 
-  style={{ padding: '10px 16px', borderTop: '1px solid #F1F5F9', textAlign: 'center', cursor: 'pointer' }}
-  onClick={() => { setShowNotifs(false); navigate('/patient/notifications'); }}
->
-  <span style={{ fontSize: '12px', color: '#0D9488', fontWeight: '600' }}>Voir toutes les notifications →</span>
-</div>
-  </div>
-)}
-            </div>
-            <button className="pill-btn" style={s.ctaBtn} onClick={() => navigate('/doctors')}>Prendre RDV</button>
-            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <button style={s.userBtn} onClick={() => { setShowUserMenu(v => !v); setShowNotifs(false); }}>
-                <div style={s.userAvatar}>{initials}</div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700' }}>{firstName}</div>
-                  <div style={{ fontSize: '10px', color: '#94A3B8' }}>Patient</div>
-                </div>
-              </button>
-              {showUserMenu && (
-                <div style={s.userDropdown} className="fade-in">
-                   <div style={s.dropdownTop}>
-                      <div style={s.userAvatar}>{initials}</div>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '700' }}>{firstName} {lastName}</div>
-                        <div style={{ fontSize: '11px', color: '#94A3B8' }}>{user?.email}</div>
-                      </div>
-                   </div>
-                   <div style={{ padding: '8px' }}>
-                      <div style={s.dropdownItem} onClick={() => navigate('/patient/profile')}>👤 Mon profil</div>
-                      <div style={s.dropdownItem} onClick={handleLogout}>🚪 Déconnexion</div>
-                   </div>
-                </div>
+        {/* Notification dropdown (floating) */}
+        {showNotifs && (
+          <div
+            className="fixed top-20 right-6 w-80 bg-white border border-slate-200 rounded-2xl shadow-dropdown z-50 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-slate-900">Notifications</span>
+              {unreadNotifs > 0 && (
+                <button
+                  className="text-[11px] text-primary-600 font-semibold bg-transparent border-0 cursor-pointer font-sans"
+                  onClick={async () => {
+                    await notificationsAPI.markAllRead();
+                    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                  }}
+                >
+                  Tout marquer lu
+                </button>
               )}
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 text-sm">Aucune notification</div>
+              ) : notifications.slice(0, 5).map((n, i) => (
+                <div key={i} className={`px-4 py-3 border-b border-slate-50 flex gap-3 items-start ${n.isRead ? '' : 'bg-primary-50'}`}>
+                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.isRead ? 'bg-slate-200' : 'bg-primary-600'}`} />
+                  <div className="flex-1">
+                    <div className={`text-sm mb-0.5 ${n.isRead ? 'font-normal text-slate-900' : 'font-semibold text-slate-900'}`}>{n.title}</div>
+                    {n.body && <div className="text-xs text-slate-500">{n.body}</div>}
+                    <div className="text-[11px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div
+              className="px-4 py-2.5 text-center text-sm text-primary-600 font-semibold cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100"
+              onClick={() => { setShowNotifs(false); navigate('/patient/notifications'); }}
+            >
+              Voir toutes les notifications
             </div>
           </div>
-        </div>
-      </nav>
+        )}
 
-      {/* ══ MAIN CONTENT ══ */}
-      <main style={s.main}>
-        
-        {/* 1. BARRE DE RECHERCHE DOCTOLIB STYLE */}
-        <div style={s.searchBarContainer} className="fade-in">
-          <div style={s.searchIcon}>🔍</div>
-          <input 
-            type="text" 
-            placeholder="Nom du médecin, spécialité, ville (ex: Cardiologue, Alger...)" 
-            style={s.searchInput}
-            onFocus={() => navigate('/doctors')} 
-          />
-          <button style={s.searchBtn} onClick={() => navigate('/doctors')}>Rechercher</button>
-        </div>
-
-        {/* 2. HERO BANNER */}
-        <div style={s.heroBanner} className="fade-in">
-          <div style={s.heroLeft}>
-            {/* On affiche le prénom et le nom dynamiquement */}
-            <div style={s.heroGreeting}>
-             Bonjour, <span style={{ color: '#5EEAD4', textTransform: 'capitalize' }}>{firstName} {lastName}</span> 👋
+        {/* Hero */}
+        <div className="rounded-2xl p-8 mb-5 flex justify-between items-center gap-5 text-white" style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #2563EB 100%)' }}>
+          <div>
+            <div className="text-2xl font-extrabold tracking-tight mb-1">
+              Bonjour, <span className="text-blue-300">{firstName} {lastName}</span>
             </div>
-            <div style={s.heroDate}>{today}</div>
-            <div style={s.heroStat}>
-              {upcoming.length > 0 ? (
-              <>Vous avez <span style={s.heroStatNum}>{upcoming.length}</span> rendez-vous à venir</>
-              ) : (
-               'Aucun rendez-vous prévu pour le moment'
-             )}
-             </div>
-             </div>
-
-          {nextAppt ? (
-            <div style={s.nextApptCard}>
-              <div style={s.nextApptLabel}>Prochain rendez-vous</div>
-              <div style={s.nextApptDoctor}>Dr. {nextAppt.doctor_first_name} {nextAppt.doctor_last_name}</div>
-              <div style={s.nextApptTime}>📅 {formatDate(nextAppt.appointment_date)} à {nextAppt.start_time}</div>
-              <div style={{ ...s.statusBadge, marginTop: '10px', backgroundColor: statusMap[nextAppt.status]?.bg, color: statusMap[nextAppt.status]?.color }}>
-                {statusMap[nextAppt.status]?.label}
-              </div>
+            <div className="text-sm text-blue-200 mb-3 capitalize">{today}</div>
+            <div className="text-[15px] text-white/85">
+              {upcoming.length > 0
+                ? <><span className="text-blue-300 font-bold">{upcoming.length}</span> rendez-vous à venir</>
+                : 'Aucun rendez-vous prévu pour le moment'}
             </div>
-          ) : (
-            <div style={s.nextApptCard}>
-              <div style={s.nextApptLabel}>Prêt pour un check-up ?</div>
-              <button className="pill-btn" style={s.heroSearchBtn} onClick={() => navigate('/doctors')}>Trouver un médecin</button>
-            </div>
-          )}
+          </div>
+          <div className="bg-white/10 border border-white/20 backdrop-blur-sm px-6 py-5 rounded-xl min-w-64 shrink-0">
+            {nextAppt ? (
+              <>
+                <div className="text-[10px] uppercase text-white/55 tracking-widest mb-2">Prochain rendez-vous</div>
+                <div className="text-base font-bold mb-2">Dr. {nextAppt.doctor?.user?.firstName} {nextAppt.doctor?.user?.lastName}</div>
+                <div className="flex items-center gap-2 text-xs text-white/75">
+                  <CalendarIcon color="rgba(255,255,255,0.7)" size={12} />
+                  {formatDate(nextAppt.appointmentDate)}
+                  <ClockIcon color="rgba(255,255,255,0.7)" size={12} />
+                  {nextAppt.appointmentTime}
+                </div>
+                <span className={`inline-block mt-2 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[nextAppt.status]?.classes || 'bg-slate-100 text-slate-600'}`}>
+                  {STATUS_MAP[nextAppt.status]?.label}
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="text-[10px] uppercase text-white/55 tracking-widest mb-2">Pas de rendez-vous</div>
+                <div className="text-sm text-white/70 mb-3">Trouvez un médecin et prenez RDV en quelques clics</div>
+                <button
+                  onClick={() => navigate('/doctors')}
+                  className="bg-white text-primary-700 border-0 px-4 py-2 rounded-lg text-sm font-bold cursor-pointer font-sans hover:bg-primary-50 transition-colors"
+                >
+                  Trouver un médecin
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* 3. GRILLE DE CONTENU */}
-        <div style={s.contentGrid}>
-          {/* GAUCHE : RDV */}
-          <div style={s.card} className="fade-in">
-            <div style={s.cardHeader}>
-              <div style={s.cardTitle}><div style={s.cardTitleDot('#0D9488')} /> Vos prochains rendez-vous</div>
-              <Link to="/patient/appointments" style={s.viewAll}>Tout voir →</Link>
+        {/* Content grid */}
+        <div className="grid grid-cols-[1.6fr_1fr] gap-5">
+
+          {/* Left: Appointments */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-bold text-slate-900">Prochains rendez-vous</div>
+              <Link to="/patient/appointments" className="text-xs text-primary-600 font-semibold no-underline">Tout voir</Link>
             </div>
-            {loading ? <div className="skeleton" style={{ height: '100px' }} /> : 
-              upcoming.length === 0 ? (
-                <div style={s.emptyState}>Vous n'avez pas de rendez-vous confirmés.</div>
-              ) : (
-                upcoming.map((appt, i) => (
-                  <div key={appt.id} className="appt-row" style={s.apptRow}>
-                    <div style={s.apptAvatar(avatarColors[i % 6])}>Dr</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={s.apptDoctorName}>Dr. {appt.doctor_first_name} {appt.doctor_last_name}</div>
-                      <div style={s.apptSpecialty}>{appt.specialty}</div>
-                      <div style={s.apptDateRow}>
-                        <span style={s.apptDateChip}>📅 {formatDate(appt.appointment_date)}</span>
-                        <span style={s.apptDateChip}>⏰ {appt.start_time}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                        <div style={{ ...s.statusBadge, backgroundColor: statusMap[appt.status]?.bg, color: statusMap[appt.status]?.color }}>
-                            {statusMap[appt.status]?.label}
-                        </div>
-                        <button style={s.manageBtn} onClick={() => navigate('/patient/appointments')}>Gérer</button>
+            {loading ? (
+              <div className="h-28 bg-slate-100 rounded-xl animate-pulse" />
+            ) : upcoming.length === 0 ? (
+              <div className="py-10 text-center text-slate-400 text-sm">Aucun rendez-vous à venir.</div>
+            ) : (
+              upcoming.map(appt => (
+                <div key={appt.id} className="flex items-center gap-3.5 p-3.5 rounded-xl border border-slate-100 bg-slate-50 mb-2.5 cursor-pointer hover:border-primary-200 hover:bg-primary-50/30 transition-all">
+                  <div className="w-11 h-11 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+                    <span className="text-[11px] font-bold text-primary-600">Dr</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-slate-900 mb-0.5">Dr. {appt.doctor?.user?.firstName} {appt.doctor?.user?.lastName}</div>
+                    <div className="text-xs text-slate-500 mb-1.5">{appt.doctor?.specialite}</div>
+                    <div className="flex gap-1.5 items-center">
+                      <span className="inline-flex items-center text-[11px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                        <CalendarIcon size={10} />&nbsp;{formatDate(appt.appointmentDate)}
+                      </span>
+                      <span className="inline-flex items-center text-[11px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                        <ClockIcon size={10} />&nbsp;{appt.appointmentTime}
+                      </span>
                     </div>
                   </div>
-                ))
-              )
-            }
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[appt.status]?.classes || 'bg-slate-100 text-slate-600'}`}>
+                      {STATUS_MAP[appt.status]?.label}
+                    </span>
+                    <button
+                      className="bg-primary-50 border border-primary-200 text-primary-700 px-3 py-1 rounded-lg text-[11px] font-semibold cursor-pointer font-sans hover:bg-primary-100 transition-colors"
+                      onClick={() => navigate('/patient/appointments')}
+                    >
+                      Gérer
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
-          {/* DROITE : ACTIONS & INFOS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={s.card}>
-              <div style={s.cardTitle}><div style={s.cardTitleDot('#7C3AED')} /> Accès rapide</div>
-              <div style={s.quickGrid}>
-                {quickActions.map((action, i) => (
-                  <Link key={i} to={action.path} className="quick-card" style={s.quickCard(action.color, action.bg, action.border)}>
-                    <span style={{ fontSize: '20px' }}>{action.icon}</span>
+          {/* Right column */}
+          <div className="flex flex-col gap-4">
+            {/* Quick actions */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
+              <div className="text-sm font-bold text-slate-900 mb-3">Accès rapide</div>
+              <div className="flex flex-col gap-2">
+                {quickActions.map(({ label, sub, path, icon }, i) => (
+                  <Link
+                    key={i}
+                    to={path}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 no-underline text-slate-900 hover:border-primary-300 hover:bg-primary-50/50 transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">{icon}</div>
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: '700' }}>{action.label}</div>
-                      <div style={{ fontSize: '10px', color: '#64748B' }}>{action.sub}</div>
+                      <div className="text-[13px] font-semibold">{label}</div>
+                      <div className="text-[11px] text-slate-500">{sub}</div>
                     </div>
+                    <ChevronRight />
                   </Link>
                 ))}
               </div>
             </div>
-            
-            {/* BADGE DE SÉCURITÉ (Très important pour un PFE) */}
-            <div style={s.securityBadge}>
-               <span style={{ fontSize: '18px' }}>🔐</span>
-               <div>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#065F46' }}>Données Sécurisées</div>
-                  <div style={{ fontSize: '10px', color: '#0D9488' }}>Vos informations médicales sont protégées selon les normes de santé.</div>
-               </div>
+
+            {/* Security badge */}
+            <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <ShieldIcon />
+              <div>
+                <div className="text-xs font-bold text-green-800 mb-1">Données Sécurisées</div>
+                <div className="text-[11px] text-slate-600 leading-relaxed">Vos informations médicales sont protégées selon les normes de santé.</div>
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-};
-
-/* ══ STYLES ══ */
-const s = {
-  root: { fontFamily: "'Sora', sans-serif", backgroundColor: '#F8FAFC', minHeight: '100vh' },
-  navbar: { backgroundColor: '#fff', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, zIndex: 100 },
-  navInner: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '65px', display: 'flex', alignItems: 'center', gap: '20px' },
-  logo: { fontSize: '22px', fontWeight: '800', color: '#0F172A', textDecoration: 'none' },
-  logoAccent: { color: '#0D9488' },
-  navLinks: { display: 'flex', gap: '5px', flex: 1 },
-  navLink: (active) => ({ padding: '8px 12px', borderRadius: '8px', fontSize: '13px', color: active ? '#0D9488' : '#64748B', textDecoration: 'none', backgroundColor: active ? '#F0FDFA' : 'transparent', fontWeight: active ? '600' : '400' }),
-  navRight: { display: 'flex', alignItems: 'center', gap: '12px' },
-  iconBtn: { padding: '8px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#fff', cursor: 'pointer', position: 'relative' },
-  notifBadge: { position: 'absolute', top: '-5px', right: '-5px', backgroundColor: '#EF4444', color: '#fff', fontSize: '9px', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' },
-  ctaBtn: { backgroundColor: '#0D9488', color: '#fff', padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  userBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 10px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#fff', cursor: 'pointer' },
-  userAvatar: { width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0D9488', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' },
-  
-  /* SEARCH BAR */
-  searchBarContainer: { display: 'flex', alignItems: 'center', backgroundColor: '#fff', padding: '6px 10px', borderRadius: '14px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', border: '1px solid #E2E8F0' },
-  searchIcon: { padding: '0 10px', color: '#94A3B8' },
-  searchInput: { flex: 1, border: 'none', outline: 'none', padding: '12px', fontSize: '14px' },
-  searchBtn: { backgroundColor: '#0D9488', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' },
-
-  /* HERO */
-  heroBanner: { background: 'linear-gradient(135deg, #0F172A 0%, #0D9488 100%)', borderRadius: '20px', padding: '30px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', position: 'relative', overflow: 'hidden' },
-  heroGreeting: { fontSize: '24px', fontWeight: '800', marginBottom: '4px' },
-  heroDate: { fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '15px' },
-  heroStatNum: { fontSize: '20px', fontWeight: '800', color: '#5EEAD4' },
-  nextApptCard: { backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '20px', borderRadius: '16px', minWidth: '260px' },
-  nextApptLabel: { fontSize: '10px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', letterSpacing: '1px', marginBottom: '8px' },
-  nextApptDoctor: { fontSize: '16px', fontWeight: '700' },
-  nextApptTime: { fontSize: '12px', marginTop: '4px', color: 'rgba(255,255,255,0.8)' },
-  heroSearchBtn: { backgroundColor: '#fff', color: '#0D9488', padding: '10px 15px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', marginTop: '10px' },
-
-  /* LAYOUT & CARDS */
-  main: { maxWidth: '1200px', margin: '0 auto', padding: '20px' },
-  contentGrid: { display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px' },
-  card: { backgroundColor: '#fff', borderRadius: '18px', padding: '24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
-  cardTitle: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', fontWeight: '700' },
-  cardTitleDot: (color) => ({ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }),
-  viewAll: { fontSize: '12px', color: '#0D9488', textDecoration: 'none', fontWeight: '600' },
-  
-  /* APPOINTMENT ROW */
-  apptRow: { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', borderRadius: '14px', border: '1px solid #F1F5F9', backgroundColor: '#F8FAFC', marginBottom: '10px', cursor: 'pointer' },
-  apptAvatar: (color) => ({ width: '45px', height: '45px', borderRadius: '12px', backgroundColor: color+'20', color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }),
-  apptDoctorName: { fontSize: '14px', fontWeight: '700', color: '#1E293B' },
-  apptSpecialty: { fontSize: '12px', color: '#64748B' },
-  apptDateRow: { display: 'flex', gap: '10px', marginTop: '6px' },
-  apptDateChip: { fontSize: '11px', backgroundColor: '#fff', padding: '3px 8px', borderRadius: '6px', color: '#475569', border: '1px solid #E2E8F0' },
-  statusBadge: { padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', display: 'inline-flex' },
-  manageBtn: { backgroundColor: 'transparent', border: '1px solid #0D9488', color: '#0D9488', padding: '4px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' },
-
-  /* QUICK ACTIONS */
-  quickGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '15px' },
-  quickCard: (color, bg, border) => ({ display: 'flex', alignItems: 'center', gap: '12px', padding: '15px', borderRadius: '14px', backgroundColor: bg, border: `1px solid ${border}`, textDecoration: 'none', color: '#1E293B' }),
-  
-  securityBadge: { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', borderRadius: '14px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', marginTop: '10px' },
-  
- notifDropdown: { position: 'absolute', top: '45px', right: 0, width: '340px', backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '14px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', overflow: 'hidden', zIndex: 200 },
-  notifItem: (read) => ({ padding: '12px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '10px', backgroundColor: read ? '#fff' : '#F0FDFA' }),
-  userDropdown: { position: 'absolute', top: '50px', right: 0, width: '220px', backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', boxShadow: '0 10px 15px rgba(0,0,0,0.1)', zIndex: 200 },
-  dropdownTop: { padding: '15px', borderBottom: '1px solid #F1F5F9', display: 'flex', gap: '10px', alignItems: 'center' },
-  dropdownItem: { padding: '10px 15px', fontSize: '13px', cursor: 'pointer', hover: { backgroundColor: '#F8FAFC' } },
-  emptyState: { textAlign: 'center', color: '#94A3B8', fontSize: '13px', padding: '40px 0' },
 };
 
 export default PatientDashboard;
