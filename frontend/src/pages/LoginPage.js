@@ -4,60 +4,33 @@ import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import useAuthStore from '../store/authStore';
 
-const EyeIcon = ({ show }) => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    {show ? (
-      <>
-        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-        <line x1="1" y1="1" x2="23" y2="23" />
-      </>
-    ) : (
-      <>
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-        <circle cx="12" cy="12" r="3" />
-      </>
-    )}
-  </svg>
-);
-
-const ChevronRight = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-
-const ChevronLeft = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
-);
+const DEMO_ACCOUNTS = [
+  { role: 'Patient',    email: 'scenario.patient@freya.dz', pass: 'FreyaDemo2026!', icon: '👤', color: '#2563EB', bg: '#EFF6FF' },
+  { role: 'Médecin',   email: 'scenario.medecin@freya.dz', pass: 'FreyaDemo2026!', icon: '🩺', color: '#7C3AED', bg: '#F5F3FF' },
+  { role: 'Labo',      email: 'scenario.labo@freya.dz',    pass: 'FreyaDemo2026!', icon: '🔬', color: '#059669', bg: '#ECFDF5' },
+];
 
 export default function LoginPage() {
-  const [mode, setMode] = useState('choice');
-  const [form, setForm] = useState({ identifier: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw,   setShowPw]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
   const { login } = useAuthStore();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) { toast.error('Remplissez tous les champs'); return; }
     setLoading(true);
     try {
-      const identifier = form.identifier.trim();
-      const payload = {
-        email: identifier.includes('@') ? identifier : undefined,
-        phone: !identifier.includes('@') ? identifier : undefined,
-        password: form.password,
-      };
-      const res = await authAPI.loginUser(payload);
+      const res = await authAPI.loginUser({ email: email.trim(), password });
       login(res.data.token, res.data.user);
-      toast.success(`Bienvenue ${res.data.user.firstName} !`);
+      toast.success(`Bienvenue, ${res.data.user.firstName} !`);
       const role = res.data.user.role;
       if (role === 'doctor')     navigate('/doctor');
       else if (role === 'admin') navigate('/admin');
       else if (role === 'laboratory') navigate('/labo');
-      else                       navigate('/patient');
+      else navigate('/patient');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Identifiants incorrects');
     } finally {
@@ -65,176 +38,160 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = (role) => {
-    if (role === 'patient') setForm({ identifier: 'patient@freya.dz', password: 'password123' });
-    if (role === 'doctor')  setForm({ identifier: 'dr.benali@freya.dz', password: 'password123' });
-    if (role === 'admin')   setForm({ identifier: 'admin@freya.dz', password: 'admin123' });
+  const fillDemo = (acc) => {
+    setEmail(acc.email);
+    setPassword(acc.pass);
   };
 
-  const inputCls = 'w-full px-3.5 py-2.5 rounded-[9px] border-[1.5px] border-slate-200 text-sm text-slate-900 bg-slate-50 font-sans transition-all focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 focus:bg-white';
-
   return (
-    <div className="font-sans flex min-h-screen">
-      {/* Left — branding */}
-      <div className="hidden md:flex w-[44%] bg-gradient-to-br from-blue-900 via-primary-700 to-primary-600 items-center justify-center px-14 py-16 shrink-0 relative overflow-hidden">
-        <div className="relative z-10 max-w-sm">
-          <div className="text-3xl font-extrabold text-white mb-12 tracking-tight">Freya</div>
-          <h1 className="text-5xl font-extrabold text-white leading-tight mb-4 tracking-tighter">
-            Votre santé,<br />simplifiée.
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'DM Sans', -apple-system, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+        .frm-input { width:100%; padding:12px 16px; border:1.5px solid #E2E8F0; border-radius:12px; font-size:15px; font-family:inherit; color:#0F172A; outline:none; transition:border-color .15s, box-shadow .15s; background:#fff; }
+        .frm-input:focus { border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+        .demo-card { transition:all .15s; cursor:pointer; }
+        .demo-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,.1); }
+        .btn-primary { width:100%; padding:13px; background:#2563EB; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .15s; }
+        .btn-primary:hover:not(:disabled) { background:#1D4ED8; }
+        .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+        .pw-toggle { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#94A3B8; padding:2px; display:flex; align-items:center; }
+      `}</style>
+
+      {/* ── Panneau gauche — branding ─────────────────────────────────── */}
+      <div style={{
+        width: '45%', background: 'linear-gradient(160deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px',
+        position: 'relative', overflow: 'hidden', flexShrink: 0,
+      }}>
+        {/* Cercles décoratifs */}
+        <div style={{ position:'absolute', top:'-80px', right:'-80px', width:'360px', height:'360px', borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
+        <div style={{ position:'absolute', bottom:'-60px', left:'-40px', width:'280px', height:'280px', borderRadius:'50%', background:'rgba(255,255,255,0.03)' }} />
+
+        <div style={{ position:'relative', animation:'fadeIn .6s ease' }}>
+          <div style={{ fontSize:'42px', fontWeight:'800', color:'#fff', letterSpacing:'-1.5px', marginBottom:'8px' }}>
+            Freya<span style={{ color:'#60A5FA' }}>.</span>
+          </div>
+          <div style={{ fontSize:'14px', fontWeight:'600', color:'rgba(255,255,255,0.45)', letterSpacing:'2px', textTransform:'uppercase', marginBottom:'48px' }}>
+            Plateforme médicale · Algérie
+          </div>
+
+          <h1 style={{ fontSize:'32px', fontWeight:'800', color:'#fff', letterSpacing:'-1px', lineHeight:'1.2', marginBottom:'16px' }}>
+            Votre santé,<br/>notre priorité
           </h1>
-          <p className="text-[15px] text-white/70 leading-relaxed mb-11">
-            Prenez rendez-vous chez un médecin en quelques clics et consultez vos résultats depuis votre espace sécurisé.
+          <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.6)', lineHeight:'1.7', maxWidth:'340px', marginBottom:'48px' }}>
+            Prenez rendez-vous chez un médecin ou un laboratoire, consultez vos ordonnances et résultats d'analyses en toute sécurité.
           </p>
-          <div className="flex flex-col gap-3.5">
-            {['Rendez-vous médicaux en ligne', "Résultats d'analyses accessibles", 'Messagerie avec votre médecin', 'Dossier médical centralisé'].map((f, i) => (
-              <div key={i} className="flex items-center gap-3 text-white/85 text-sm font-medium">
-                <div className="w-[7px] h-[7px] rounded-full bg-blue-300 shrink-0" />
-                <span>{f}</span>
+
+          {/* Stats */}
+          <div style={{ display:'flex', gap:'32px' }}>
+            {[['100+','Médecins'], ['50+','Laboratoires'], ['48','Wilayas']].map(([n,l]) => (
+              <div key={l}>
+                <div style={{ fontSize:'28px', fontWeight:'800', color:'#60A5FA' }}>{n}</div>
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', fontWeight:'500' }}>{l}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Right — form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-10 bg-white">
-        <div className="w-full max-w-[400px]">
+      {/* ── Panneau droit — formulaire ────────────────────────────────── */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px 64px', background:'#F8FAFC', overflowY:'auto' }}>
+        <div style={{ maxWidth:'400px', width:'100%', margin:'0 auto', animation:'fadeIn .5s ease .1s both' }}>
 
-          {mode === 'choice' ? (
-            <>
-              <div className="text-[28px] font-extrabold text-slate-900 mb-1.5 tracking-tight">Connexion</div>
-              <p className="text-sm text-slate-500 mb-7">Choisissez votre espace pour continuer</p>
+          <h2 style={{ fontSize:'28px', fontWeight:'800', color:'#0F172A', letterSpacing:'-0.7px', marginBottom:'6px' }}>
+            Connexion
+          </h2>
+          <p style={{ fontSize:'14px', color:'#64748B', marginBottom:'32px' }}>
+            Pas encore de compte ?{' '}
+            <Link to="/register" style={{ color:'#2563EB', fontWeight:'600', textDecoration:'none' }}>Créer un compte</Link>
+          </p>
 
-              <div className="flex flex-col gap-3 mb-7">
-                {[
-                  { title: 'Espace Patient', sub: 'Prenez rendez-vous, consultez vos résultats', onClick: () => setMode('patient') },
-                  { title: 'Espace Professionnel', sub: 'Gérez vos rendez-vous et patients', onClick: () => setMode('doctor') },
-                ].map(({ title, sub, onClick }) => (
-                  <button
-                    key={title}
-                    onClick={onClick}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border-[1.5px] border-slate-200 bg-white text-left transition-all cursor-pointer hover:border-primary-600 hover:bg-primary-50 font-sans"
-                  >
-                    <div>
-                      <div className="font-semibold text-slate-900 text-sm mb-0.5">{title}</div>
-                      <div className="text-[13px] text-slate-500">{sub}</div>
-                    </div>
-                    <ChevronRight />
-                  </button>
-                ))}
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom:'16px' }}>
+              <label style={{ display:'block', fontSize:'12px', fontWeight:'700', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>
+                Email ou téléphone
+              </label>
+              <input
+                type="text"
+                className="frm-input"
+                placeholder="votre@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+
+            <div style={{ marginBottom:'24px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                <label style={{ fontSize:'12px', fontWeight:'700', color:'#64748B', textTransform:'uppercase', letterSpacing:'0.5px' }}>
+                  Mot de passe
+                </label>
+                <a href="#" style={{ fontSize:'13px', color:'#2563EB', textDecoration:'none', fontWeight:'500' }}>
+                  Mot de passe oublié ?
+                </a>
               </div>
-
-              <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-xs text-slate-400 font-medium px-2">ou</span>
-                <div className="flex-1 h-px bg-slate-200" />
-              </div>
-
-              <div className="mt-5 text-center text-[13px] text-slate-500">
-                Pas encore de compte ?{' '}
-                <Link to="/register" className="text-primary-600 font-semibold no-underline hover:underline">Créer un compte</Link>
-              </div>
-            </>
-          ) : (
-            <>
-              <button
-                className="flex items-center gap-1.5 bg-transparent border-0 text-slate-500 text-[13px] font-semibold cursor-pointer p-0 mb-6 hover:text-slate-900 transition-colors font-sans"
-                onClick={() => setMode('choice')}
-              >
-                <ChevronLeft /> Retour
-              </button>
-
-              <div className="text-[28px] font-extrabold text-slate-900 mb-1.5 tracking-tight">
-                {mode === 'doctor' ? 'Espace Professionnel' : 'Espace Patient'}
-              </div>
-              <p className="text-sm text-slate-500 mb-7">Heureux de vous revoir</p>
-
-              {/* Demo credentials */}
-              <div className="bg-primary-50 border border-primary-200 rounded-[10px] p-3 mb-5">
-                <div className="text-[10px] font-bold text-primary-700 mb-2 uppercase tracking-wider">Identifiants de démonstration</div>
-                <div className="flex gap-2 flex-wrap">
-                  {mode === 'patient' && (
-                    <button
-                      className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
-                      onClick={() => fillDemo('patient')}
-                    >
-                      patient@freya.dz / password123
-                    </button>
+              <div style={{ position:'relative' }}>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  className="frm-input"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  style={{ paddingRight:'44px' }}
+                  autoComplete="current-password"
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowPw(v => !v)}>
+                  {showPw ? (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   )}
-                  {mode === 'doctor' && (
-                    <>
-                      <button
-                        className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
-                        onClick={() => fillDemo('doctor')}
-                      >
-                        dr.benali@freya.dz / password123
-                      </button>
-                      <button
-                        className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
-                        onClick={() => setForm({ identifier: 'labo.pasteur@freya.dz', password: 'labo123' })}
-                      >
-                        labo.pasteur@freya.dz / labo123
-                      </button>
-                    </>
-                  )}
-                  <button
-                    className="text-xs px-2.5 py-1 rounded-md border border-primary-200 bg-primary-100 text-primary-800 cursor-pointer font-medium hover:bg-primary-200 transition-colors font-sans"
-                    onClick={() => fillDemo('admin')}
-                  >
-                    admin@freya.dz / admin123
-                  </button>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Email ou téléphone</label>
-                  <input
-                    type="text"
-                    placeholder="votre@email.com ou 06XXXXXXXX"
-                    value={form.identifier}
-                    onChange={e => setForm({ ...form, identifier: e.target.value })}
-                    required
-                    className={inputCls}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Mot de passe</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={form.password}
-                      onChange={e => setForm({ ...form, password: e.target.value })}
-                      required
-                      className={`${inputCls} pr-11`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 flex items-center p-1"
-                    >
-                      <EyeIcon show={showPassword} />
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-primary-600 text-white border-0 rounded-[10px] text-[15px] font-bold cursor-pointer mt-2 hover:bg-primary-700 transition-colors font-sans disabled:opacity-60"
-                >
-                  {loading ? 'Connexion en cours...' : 'Se connecter'}
                 </button>
-              </form>
-
-              <div className="mt-5 text-center text-[13px] text-slate-500">
-                Pas encore de compte ?{' '}
-                <Link to="/register" className="text-primary-600 font-semibold no-underline hover:underline">S'inscrire</Link>
               </div>
-            </>
-          )}
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Connexion...' : 'Se connecter →'}
+            </button>
+          </form>
+
+          {/* Séparateur */}
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', margin:'28px 0' }}>
+            <div style={{ flex:1, height:'1px', background:'#E2E8F0' }} />
+            <span style={{ fontSize:'12px', color:'#94A3B8', fontWeight:'600' }}>Accès démo</span>
+            <div style={{ flex:1, height:'1px', background:'#E2E8F0' }} />
+          </div>
+
+          {/* Comptes démo */}
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+            {DEMO_ACCOUNTS.map(acc => (
+              <button
+                key={acc.role}
+                className="demo-card"
+                onClick={() => fillDemo(acc)}
+                style={{
+                  display:'flex', alignItems:'center', gap:'12px',
+                  padding:'12px 14px', borderRadius:'12px',
+                  border:`1.5px solid ${acc.bg === '#EFF6FF' ? '#BFDBFE' : acc.bg === '#F5F3FF' ? '#DDD6FE' : '#A7F3D0'}`,
+                  background: acc.bg, cursor:'pointer', textAlign:'left', width:'100%',
+                }}
+              >
+                <span style={{ fontSize:'22px', lineHeight:1 }}>{acc.icon}</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'13px', fontWeight:'700', color:'#0F172A' }}>{acc.role}</div>
+                  <div style={{ fontSize:'11px', color:'#64748B', marginTop:'1px' }}>{acc.email}</div>
+                </div>
+                <span style={{ fontSize:'11px', fontWeight:'700', color: acc.color, background:'rgba(255,255,255,0.7)', padding:'3px 8px', borderRadius:'20px', border:`1px solid ${acc.color}22` }}>
+                  Remplir →
+                </span>
+              </button>
+            ))}
+            <p style={{ fontSize:'11px', color:'#94A3B8', textAlign:'center', marginTop:'4px' }}>
+              Mot de passe démo : <strong>FreyaDemo2026!</strong>
+            </p>
+          </div>
         </div>
       </div>
     </div>

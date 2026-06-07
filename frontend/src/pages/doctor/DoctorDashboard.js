@@ -91,11 +91,19 @@ export default function DoctorDashboard() {
       <DoctorNavbar active="dashboard" />
 
       <div className="max-w-6xl mx-auto px-6 py-7">
-        <div className="mb-6">
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. {lastName}</h1>
-          <p className="text-sm text-slate-500 mt-1 capitalize">
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — Aperçu de votre activité
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. {lastName}</h1>
+            <p className="text-sm text-slate-500 mt-1 capitalize">
+              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · Mise à jour automatique toutes les 30s
+            </p>
+          </div>
+          <button
+            onClick={loadStats}
+            className="text-sm text-primary-600 border border-primary-200 bg-white rounded-xl px-4 py-2 font-semibold cursor-pointer hover:bg-primary-50 transition-colors"
+          >
+            Actualiser
+          </button>
         </div>
 
         {/* Stats */}
@@ -113,6 +121,25 @@ export default function DoctorDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Alerte RDV en attente */}
+        {(stats.pendingAppointments ?? 0) > 0 && (
+          <div
+            className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-5 cursor-pointer hover:bg-amber-100 transition-colors"
+            onClick={() => navigate('/doctor/appointments')}
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <ClockIcon color="#D97706" size={16} />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-amber-800">
+                {stats.pendingAppointments} rendez-vous en attente de confirmation
+              </div>
+              <div className="text-xs text-amber-600">Cliquez pour confirmer ou refuser</div>
+            </div>
+            <div className="text-amber-600 text-sm font-semibold">Gérer →</div>
+          </div>
+        )}
 
         {/* Upcoming appointments */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6">
@@ -153,8 +180,10 @@ export default function DoctorDashboard() {
                           <span className="font-medium">{a.patient?.firstName} {a.patient?.lastName}</span>
                         </div>
                       </td>
-                      <td className="px-3.5 py-3.5 text-sm text-slate-700 border-b border-slate-100">{new Date(a.appointment_date).toLocaleDateString('fr-FR')}</td>
-                      <td className="px-3.5 py-3.5 text-sm font-bold text-slate-900 border-b border-slate-100">{a.appointment_time}</td>
+                      <td className="px-3.5 py-3.5 text-sm text-slate-700 border-b border-slate-100">
+                        {new Date(a.appointmentDate || a.appointment_date).toLocaleDateString('fr-FR', { day:'numeric', month:'short' })}
+                      </td>
+                      <td className="px-3.5 py-3.5 text-sm font-bold text-slate-900 border-b border-slate-100">{a.appointmentTime || a.appointment_time}</td>
                       <td className="px-3.5 py-3.5 text-sm text-slate-500 border-b border-slate-100">{a.motif || '—'}</td>
                       <td className="px-3.5 py-3.5 border-b border-slate-100">
                         <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_CLASSES[a.status] || 'bg-slate-100 text-slate-600'}`}>

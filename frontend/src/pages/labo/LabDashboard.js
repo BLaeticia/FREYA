@@ -61,15 +61,15 @@ export default function LabDashboard() {
   );
 
   const statCards = [
-    { Icon: FlaskIcon, iconColor: '#2563EB', bg: 'bg-primary-50', val: totalAnalyses,      label: 'Types d\'analyses' },
-    { Icon: MapIcon,   iconColor: '#059669', bg: 'bg-green-50',   val: clinic?.wilaya || '—', label: 'Wilaya' },
-    { Icon: PhoneIcon, iconColor: '#7C3AED', bg: 'bg-violet-50',  val: clinic?.phone  || '—', label: 'Téléphone' },
+    { Icon: FlaskIcon, iconColor: '#2563EB', bg: 'bg-primary-50', val: stats.pending      ?? 0, label: 'En attente', highlight: (stats.pending ?? 0) > 0 },
+    { Icon: MapIcon,   iconColor: '#059669', bg: 'bg-green-50',   val: stats.appointments ?? 0, label: 'Total RDV' },
+    { Icon: PhoneIcon, iconColor: '#7C3AED', bg: 'bg-violet-50',  val: stats.ratingAvg    ? `${Number(stats.ratingAvg).toFixed(1)}/5` : '—', label: 'Note' },
   ];
 
   const quickLinks = [
-    { label: 'Gérer les analyses',   sub: 'Tarifs et descriptions',      path: '/labo/analyses' },
-    { label: 'Messagerie',           sub: 'Communiquer avec les patients', path: '/labo/messages' },
-    { label: 'Mon profil',           sub: 'Informations du laboratoire',  path: '/labo/profile' },
+    { label: 'Rendez-vous',          sub: 'Confirmer & envoyer résultats', path: '/labo/appointments', highlight: true },
+    { label: 'Gérer les analyses',   sub: 'Tarifs et descriptions',         path: '/labo/analyses' },
+    { label: 'Mon profil',           sub: 'Informations du laboratoire',    path: '/labo/profile' },
   ];
 
   return (
@@ -105,16 +105,35 @@ export default function LabDashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3.5 mb-6">
-          {statCards.map(({ Icon, iconColor, bg, val, label }, i) => (
-            <div key={i} className="bg-white rounded-2xl p-5 flex flex-col gap-2.5 shadow-card border border-slate-200">
+          {statCards.map(({ Icon, iconColor, bg, val, label, highlight }, i) => (
+            <div key={i} className={`bg-white rounded-2xl p-5 flex flex-col gap-2.5 shadow-card border transition-all hover:-translate-y-0.5 ${highlight ? 'border-primary-300 ring-1 ring-primary-100' : 'border-slate-200'}`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bg}`}>
                 <Icon color={iconColor} size={18} />
               </div>
-              <div className="text-2xl font-extrabold tracking-tight text-slate-900 truncate">{val}</div>
+              <div className={`text-2xl font-extrabold tracking-tight truncate ${highlight ? 'text-primary-600' : 'text-slate-900'}`}>{val}</div>
               <div className="text-xs text-slate-500 font-medium">{label}</div>
             </div>
           ))}
         </div>
+
+        {/* Alerte RDV en attente */}
+        {(stats.pending ?? 0) > 0 && (
+          <div
+            className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-6 cursor-pointer hover:bg-amber-100 transition-colors"
+            onClick={() => navigate('/labo/appointments')}
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <FlaskIcon size={16} color="#D97706" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-amber-800">
+                {stats.pending} demande{stats.pending > 1 ? 's' : ''} d'analyse en attente de confirmation
+              </div>
+              <div className="text-xs text-amber-600">Cliquez pour gérer les rendez-vous</div>
+            </div>
+            <div className="text-amber-600 text-sm font-semibold">Voir →</div>
+          </div>
+        )}
 
         <div className="grid grid-cols-[1fr_320px] gap-5">
           {/* Tableau d'analyses */}
@@ -154,15 +173,19 @@ export default function LabDashboard() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
               <div className="text-sm font-bold text-slate-900 mb-3">Accès rapide</div>
               <div className="flex flex-col gap-2">
-                {quickLinks.map(({ label, sub, path }, i) => (
+                {quickLinks.map(({ label, sub, path, highlight }, i) => (
                   <Link
                     key={i}
                     to={path}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 no-underline text-slate-900 hover:border-primary-300 hover:bg-primary-50/50 transition-all"
+                    className={`flex items-center gap-3 p-3 rounded-xl border no-underline transition-all ${
+                      highlight
+                        ? 'bg-primary-600 border-primary-600 text-white hover:bg-primary-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-900 hover:border-primary-300 hover:bg-primary-50/50'
+                    }`}
                   >
                     <div className="flex-1">
-                      <div className="text-[13px] font-semibold text-slate-900">{label}</div>
-                      <div className="text-[11px] text-slate-500">{sub}</div>
+                      <div className={`text-[13px] font-semibold ${highlight ? 'text-white' : 'text-slate-900'}`}>{label}</div>
+                      <div className={`text-[11px] ${highlight ? 'text-primary-200' : 'text-slate-500'}`}>{sub}</div>
                     </div>
                     <ChevronRight />
                   </Link>

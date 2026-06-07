@@ -1,4 +1,4 @@
-// v2.3 — filtrage créneaux passés, messagerie, affichage labo dans RDV, logo
+// v3.0 — inscription médecin/labo auto-profil, design moderne, 3 comptes scénario
 require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');

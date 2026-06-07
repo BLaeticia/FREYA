@@ -27,6 +27,7 @@ router.post(['/register', '/register/patient'], async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const effectiveRole = role || 'patient';
     const user = await prisma.user.create({
       data: {
         email: email || null,
@@ -34,23 +35,68 @@ router.post(['/register', '/register/patient'], async (req, res) => {
         firstName,
         lastName,
         password: hashedPassword,
-        role: role || 'patient',
+        role: effectiveRole,
         isActive: true,
         isVerified: false,
-        patientProfile: (role === 'patient' || !role) ? { create: {} } : undefined,
+        patientProfile: (effectiveRole === 'patient') ? { create: {} } : undefined,
       }
     });
+
+    // Auto-créer le profil Doctor si role === 'doctor'
+    if (effectiveRole === 'doctor') {
+      const { specialite, wilaya, city, cabinetAddress } = req.body;
+      await prisma.doctor.create({
+        data: {
+          userId: user.id,
+          specialite: specialite || 'Médecin généraliste',
+          wilaya: wilaya || 'Alger',
+          city: city || null,
+          cabinetAddress: cabinetAddress || null,
+          adminApproved: true,
+          ordreVerified: false,
+          consultationPrice: 2000,
+          languages: 'Arabe,Français',
+          experienceYears: 0,
+        }
+      });
+      // Créneaux par défaut : Dim-Jeu + Sam, 08h-12h et 14h-18h
+      const doctorRec = await prisma.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
+      const defaultSlots = [];
+      for (const day of [6, 0, 1, 2, 3, 4]) {
+        defaultSlots.push({ doctorId: doctorRec.id, dayOfWeek: day, startTime: '08:00', endTime: '12:00', slotDuration: 30, isAvailable: true });
+        defaultSlots.push({ doctorId: doctorRec.id, dayOfWeek: day, startTime: '14:00', endTime: '18:00', slotDuration: 30, isAvailable: true });
+      }
+      await prisma.availability.createMany({ data: defaultSlots });
+    }
+
+    // Auto-créer la clinique si role === 'laboratory'
+    if (effectiveRole === 'laboratory') {
+      const { clinicName, wilaya, city, address } = req.body;
+      const clinic = await prisma.clinic.create({
+        data: {
+          name: clinicName || `Laboratoire ${firstName}`,
+          address: address || wilaya || 'Algérie',
+          wilaya: wilaya || 'Alger',
+          city: city || null,
+          phone: phone || null,
+          email: email || null,
+          specialites: 'Laboratoire,Analyses,Hématologie,Biochimie',
+          adminApproved: true,
+        }
+      });
+      await prisma.user.update({ where: { id: user.id }, data: { clinicId: clinic.id } });
+    }
 
     await prisma.notification.create({
       data: {
         userId: user.id,
         type: 'registration',
         title: 'Bienvenue sur Freya !',
-        body: `Bonjour ${firstName}, votre compte est créé avec succès.`,
+        body: `Bonjour ${firstName}, votre compte a été créé avec succès.`,
       }
     });
 
-    res.status(201).json({ message: "Utilisateur créé avec succès", userId: user.id });
+    res.status(201).json({ message: "Compte créé avec succès", userId: user.id, role: effectiveRole });
   } catch (error) {
     console.error("Erreur Register:", error);
     res.status(500).json({ error: "Erreur lors de l'inscription." });
