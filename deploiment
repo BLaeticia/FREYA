@@ -7,22 +7,22 @@
         <mxCell id="kVCkT-AeOqDETsgFNbZZ-123" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);" value="" vertex="1">
           <mxGeometry height="490" width="900" x="220" y="1540" as="geometry" />
         </mxCell>
-        <mxCell id="f1" edge="1" parent="1" source="a1" style="edgeStyle=orthogonalEdgeStyle;">
+        <mxCell id="f1" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="130" y="155.0769230769231" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="f2" edge="1" parent="1" source="a2" style="edgeStyle=orthogonalEdgeStyle;">
+        <mxCell id="f2" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="130" y="335.0769230769231" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="f3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;" target="pc3">
+        <mxCell id="f3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="80" y="510" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="ri2" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" target="be3" value="">
+        <mxCell id="ri2" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" value="">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="750" y="690" as="sourcePoint" />
           </mxGeometry>
