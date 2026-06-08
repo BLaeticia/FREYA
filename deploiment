@@ -1,166 +1,150 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
-  <root>
-    <mxCell id="0" />
-    <mxCell id="1" parent="0" />
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- TITRE                                                        -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="99" value="&lt;b&gt;&lt;font style='font-size:16px'&gt;Diagramme de Déploiement — Application FREYA&lt;/font&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;" vertex="1" parent="1">
-      <mxGeometry x="400" y="20" width="900" height="40" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- ACTEUR 1 : Patient                                          -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="a1" value="Patient" style="shape=mxgraph.flowchart.start_2;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
-      <mxGeometry x="40" y="130" width="40" height="40" as="geometry" />
-    </mxCell>
-    <mxCell id="a1b" value="Patient" style="text;html=1;align=center;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="20" y="175" width="80" height="20" as="geometry" />
-    </mxCell>
-
-    <!-- PC Patient : artifact -->
-    <mxCell id="pc1" value="&lt;&lt;artifact&gt;&gt;&#xa;&lt;b&gt;PC_Patient&lt;/b&gt;" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="130" y="90" width="200" height="130" as="geometry" />
-    </mxCell>
-    <mxCell id="pc1c" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Navigateur Web&lt;/b&gt;&#xa;(Chrome / Firefox)" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="150" y="150" width="160" height="55" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- ACTEUR 2 : Médecin                                          -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="a2" value="Médecin" style="shape=mxgraph.flowchart.start_2;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
-      <mxGeometry x="40" y="310" width="40" height="40" as="geometry" />
-    </mxCell>
-    <mxCell id="a2b" value="Médecin" style="text;html=1;align=center;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="20" y="355" width="80" height="20" as="geometry" />
-    </mxCell>
-
-    <!-- PC Médecin : artifact -->
-    <mxCell id="pc2" value="&lt;&lt;artifact&gt;&gt;&#xa;&lt;b&gt;PC_Médecin&lt;/b&gt;" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="130" y="270" width="200" height="130" as="geometry" />
-    </mxCell>
-    <mxCell id="pc2c" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Navigateur Web&lt;/b&gt;&#xa;(Chrome / Firefox)" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="150" y="330" width="160" height="55" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- ACTEUR 3 : Admin                                            -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="a3" value="Admin" style="shape=mxgraph.flowchart.start_2;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
-      <mxGeometry x="40" y="490" width="40" height="40" as="geometry" />
-    </mxCell>
-    <mxCell id="a3b" value="Admin" style="text;html=1;align=center;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="20" y="535" width="80" height="20" as="geometry" />
-    </mxCell>
-
-    <!-- PC Admin : artifact -->
-    <mxCell id="pc3" value="&lt;&lt;artifact&gt;&gt;&#xa;&lt;b&gt;PC_Admin&lt;/b&gt;" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="130" y="450" width="200" height="130" as="geometry" />
-    </mxCell>
-    <mxCell id="pc3c" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Navigateur Web&lt;/b&gt;&#xa;(Chrome / Firefox)" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="150" y="510" width="160" height="55" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- ACTEUR 4 : Laboratoire                                      -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="a4" value="Laboratoire" style="shape=mxgraph.flowchart.start_2;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
-      <mxGeometry x="40" y="670" width="40" height="40" as="geometry" />
-    </mxCell>
-    <mxCell id="a4b" value="Laboratoire" style="text;html=1;align=center;fontSize=11;" vertex="1" parent="1">
-      <mxGeometry x="15" y="715" width="90" height="20" as="geometry" />
-    </mxCell>
-
-    <!-- PC Labo : artifact -->
-    <mxCell id="pc4" value="&lt;&lt;artifact&gt;&gt;&#xa;&lt;b&gt;PC_Laboratoire&lt;/b&gt;" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="130" y="630" width="200" height="130" as="geometry" />
-    </mxCell>
-    <mxCell id="pc4c" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Navigateur Web&lt;/b&gt;&#xa;(Chrome / Firefox)" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="150" y="690" width="160" height="55" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- DEVICE : Serveur Web (Frontend + Backend)                    -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="srv" value="&lt;b&gt;device&lt;/b&gt;&#xa;Serveur Web" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="480" y="100" width="560" height="720" as="geometry" />
-    </mxCell>
-
-    <!-- Sous-nœud Frontend -->
-    <mxCell id="fe" value="&lt;b&gt;Serveur Frontend&lt;/b&gt;&#xa;(Node.js : port 3000)" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f0a30a;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="510" y="180" width="490" height="220" as="geometry" />
-    </mxCell>
-
-    <!-- Composant : React SPA -->
-    <mxCell id="fec" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Frontend — React SPA&lt;/b&gt;&#xa;HTML | CSS | JavaScript&#xa;React 18 · React Router v6&#xa;Zustand · TanStack Query&#xa;Tailwind CSS · Axios" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="580" y="250" width="350" height="120" as="geometry" />
-    </mxCell>
-
-    <!-- Sous-nœud Backend -->
-    <mxCell id="be" value="&lt;b&gt;Serveur Backend&lt;/b&gt;&#xa;(Node.js : port 5000)" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="510" y="440" width="490" height="340" as="geometry" />
-    </mxCell>
-
-    <!-- Composant : Express API server.js -->
-    <mxCell id="be1" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;API REST — server.js&lt;/b&gt;&#xa;Express.js · CORS · dotenv" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="560" y="500" width="380" height="65" as="geometry" />
-    </mxCell>
-
-    <!-- Composant : Routes + Middleware -->
-    <mxCell id="be2" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Routes + Middleware&lt;/b&gt;&#xa;/api/auth · /api/doctors · /api/appointments&#xa;/api/messages · /api/records · /api/reviews&#xa;/api/admin · /api/laboratory · /api/notifications&#xa;JWT Auth · CORS · Error Handler" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="560" y="590" width="380" height="100" as="geometry" />
-    </mxCell>
-
-    <!-- Composant : Services + Controllers + Prisma -->
-    <mxCell id="be3" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;Services / Controllers / Prisma ORM&lt;/b&gt;&#xa;Auth · Doctor · Appointment · Message&#xa;Record · Review · Admin · Notification&#xa;Prisma Client JS → PostgreSQL driver (pg)" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="560" y="710" width="380" height="55" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- DEVICE : Serveur BDD                                        -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="bdd" value="&lt;&lt;Device&gt;&gt;&#xa;&lt;b&gt;Serveur BDD&lt;/b&gt;" style="shape=mxgraph.uml.deployment.node;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
-      <mxGeometry x="1160" y="350" width="280" height="300" as="geometry" />
-    </mxCell>
-
-    <!-- Composant : PostgreSQL -->
-    <mxCell id="bdd1" value="&lt;&lt;component&gt;&gt;&#xa;&lt;b&gt;PostgreSQL&lt;/b&gt;&#xa;Base relationnelle&#xa;Tables : users, doctors,&#xa;appointments, records,&#xa;messages, reviews,&#xa;notifications, availabilities" style="shape=mxgraph.uml.deployment.component;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="1185" y="430" width="210" height="150" as="geometry" />
-    </mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- FLÈCHES ACTEURS → PC                                        -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="f1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a1" target="pc1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="f2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a2" target="pc2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="f3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a3" target="pc3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="f4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="a4" target="pc4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- FLÈCHES navigateurs → Frontend (HTTP/HTTPS)                 -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="h1" value="HTTP/HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;fontStyle=1;fontSize=10;" edge="1" source="pc1c" target="fec" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="h2" value="HTTP/HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontStyle=1;fontSize=10;" edge="1" source="pc2c" target="fec" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="h3" value="HTTP/HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d79b00;fontStyle=1;fontSize=10;" edge="1" source="pc3c" target="fec" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="h4" value="HTTP/HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontStyle=1;fontSize=10;" edge="1" source="pc4c" target="fec" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- FLÈCHE Frontend → Backend (REST/JSON)                       -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="rest" value="REST / JSON&#xa;(port 5000 · axios · JWT)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;fontStyle=1;fontSize=10;" edge="1" source="fec" target="be1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-    <!-- Routes internes -->
-    <mxCell id="ri1" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" edge="1" source="be1" target="be2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-    <mxCell id="ri2" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" edge="1" source="be2" target="be3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- FLÈCHE Backend → BDD (TCP/IP)                               -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <mxCell id="tcp" value="TCP/IP&#xa;(Prisma ORM · SQL)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;fontStyle=1;fontSize=10;" edge="1" source="be3" target="bdd1" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
-
-  </root>
-</mxGraphModel>
+<mxfile host="app.diagrams.net">
+  <diagram id="XuHAkXnY2KIENRuA_ynf" name="Page-1">
+    <mxGraphModel dx="1407" dy="-442" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-123" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);" value="" vertex="1">
+          <mxGeometry height="490" width="900" x="220" y="1540" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="a1" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="155.0769230769231" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="a2" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="335.0769230769231" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;" target="pc3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="510" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ri2" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;" target="be3" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="690" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-101" parent="1" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;&amp;lt;&amp;lt;device&amp;gt;&amp;gt;&lt;br&gt;PC Utilisateur&lt;/font&gt;" vertex="1">
+          <mxGeometry height="145" width="170" x="360" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-104" parent="1" style="html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="75" width="110" x="390" y="1657.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-108" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;Utilisateur&lt;br&gt;&amp;nbsp;(patient/labo/médecin)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="270" y="1642.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-109" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;Admin&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="260" y="1877.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-112" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0;entryDx=90;entryDy=190;entryPerimeter=0;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="300" y="1906.97" as="sourcePoint" />
+            <mxPoint x="360" y="1906.97" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-113" parent="1" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;&amp;lt;&amp;lt;device&amp;gt;&amp;gt;&lt;br&gt;Serveur Frontend et Backend&lt;/font&gt;" vertex="1">
+          <mxGeometry height="380" width="210" x="620" y="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-115" parent="1" style="html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="665" y="1670" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-119" parent="1" style="shape=component;jettyWidth=8;jettyHeight=4;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="750" y="1690" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-122" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#FFFFFF);fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="&amp;lt;&amp;lt;component&amp;gt;&amp;gt;&lt;br&gt;Frontend React" vertex="1">
+          <mxGeometry height="30" width="100" x="675" y="1740" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-130" parent="1" style="html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="665" y="1825" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-131" parent="1" style="shape=component;jettyWidth=8;jettyHeight=4;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="750" y="1845" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-132" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#FFFFFF);fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="&amp;lt;&amp;lt;component&amp;gt;&amp;gt;&lt;br&gt;API Express.js" vertex="1">
+          <mxGeometry height="30" width="100" x="675" y="1895" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-133" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;strokeColor=light-dark(#000000,#000000);entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="kVCkT-AeOqDETsgFNbZZ-115" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="724.93" y="1825" />
+            </Array>
+            <mxPoint x="724.93" y="1815" as="sourcePoint" />
+            <mxPoint x="724.93" y="1795" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-136" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#FFFFFF);fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="&amp;lt;&amp;lt;component&amp;gt;&amp;gt;&lt;br&gt;Navigateur web" vertex="1">
+          <mxGeometry height="30" width="100" x="395" y="1690" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-137" parent="1" style="shape=component;jettyWidth=8;jettyHeight=4;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="470" y="1665" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-138" parent="1" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;&amp;lt;&amp;lt;device&amp;gt;&amp;gt;&lt;br&gt;PC Utilisateur&lt;/font&gt;" vertex="1">
+          <mxGeometry height="145" width="170" x="360" y="1835" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-139" parent="1" style="html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="75" width="110" x="390" y="1892.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-140" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#FFFFFF);fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="&amp;lt;&amp;lt;component&amp;gt;&amp;gt;&lt;br&gt;Navigateur web" vertex="1">
+          <mxGeometry height="30" width="100" x="395" y="1925" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-141" parent="1" style="shape=component;jettyWidth=8;jettyHeight=4;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="470" y="1900" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-143" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0;entryDx=90;entryDy=190;entryPerimeter=0;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="300" y="1674.47" as="sourcePoint" />
+            <mxPoint x="360" y="1674.47" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-144" edge="1" parent="1" source="kVCkT-AeOqDETsgFNbZZ-113" style="endArrow=none;html=1;rounded=0;exitX=0.477;exitY=1.003;exitDx=0;exitDy=0;exitPerimeter=0;strokeColor=light-dark(#000000,#000000);" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="1780" />
+            </Array>
+            <mxPoint x="410" y="1795" as="sourcePoint" />
+            <mxPoint x="460" y="1745" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-145" edge="1" parent="1" source="kVCkT-AeOqDETsgFNbZZ-113" style="endArrow=none;html=1;rounded=0;exitX=0.547;exitY=0.996;exitDx=0;exitDy=0;exitPerimeter=0;strokeColor=light-dark(#000000,#000000);entryX=0;entryY=0.428;entryDx=0;entryDy=0;entryPerimeter=0;" target="kVCkT-AeOqDETsgFNbZZ-138" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="457" y="1805" />
+            </Array>
+            <mxPoint x="685" y="1807" as="sourcePoint" />
+            <mxPoint x="457" y="1770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-146" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);fontSize=12;" value="https" vertex="1">
+          <mxGeometry height="30" width="60" x="540" y="1760" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-148" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);fontSize=12;" value="https" vertex="1">
+          <mxGeometry height="30" width="60" x="540" y="1800" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-149" parent="1" style="verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="&lt;font style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;&amp;lt;&amp;lt;device&amp;gt;&amp;gt;&lt;br&gt;Serveur BDD&amp;nbsp;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="145" width="170" x="920" y="1717.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-150" parent="1" style="html=1;whiteSpace=wrap;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="75" width="110" x="950" y="1775" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-151" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=light-dark(#FFFFFF,#FFFFFF);fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="&amp;lt;&amp;lt;component&amp;gt;&amp;gt;&lt;br&gt;PostgreSQL" vertex="1">
+          <mxGeometry height="30" width="100" x="955" y="1807.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-152" parent="1" style="shape=component;jettyWidth=8;jettyHeight=4;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="1030" y="1782.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-153" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;entryX=0;entryY=0;entryDx=77.5;entryDy=170;entryPerimeter=0;strokeColor=light-dark(#000000,#000000);" target="kVCkT-AeOqDETsgFNbZZ-149" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="830" y="1795" as="sourcePoint" />
+            <mxPoint x="890" y="1770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kVCkT-AeOqDETsgFNbZZ-154" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="TCP/IP" vertex="1">
+          <mxGeometry height="30" width="60" x="850" y="1770" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
