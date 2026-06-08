@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-06-08T00:00:00.000Z" agent="Claude" version="21.0.0">
+  <diagram name="Diagramme de composants FREYA" id="freya-composants">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ══════════════════════════════════════════
+             NAVIGATEUR
+        ══════════════════════════════════════════ -->
+        <mxCell id="navigateur" value="Navigateur" style="shape=mxgraph.uml.component;fontSize=13;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="460" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             COMPOSANT ACCUEIL
+        ══════════════════════════════════════════ -->
+        <mxCell id="accueil" value="&lt;&lt;Accueil&gt;&gt;&#xa;App.jsx / index.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="260" y="360" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             SGBD (PostgreSQL)
+        ══════════════════════════════════════════ -->
+        <mxCell id="sgbd" value="PostgreSQL&#xa;(SGBD)" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="260" y="560" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             BLOC AUTH (connexion + inscription)
+        ══════════════════════════════════════════ -->
+        <mxCell id="bloc-auth" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="540" y="260" width="220" height="260" as="geometry" />
+        </mxCell>
+        <!-- icône component en haut droite -->
+        <mxCell id="auth-icon" value="" style="shape=mxgraph.uml.component;fontSize=11;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="728" y="264" width="28" height="28" as="geometry" />
+        </mxCell>
+        <!-- Connexion -->
+        <mxCell id="comp-connexion" value="&lt;&lt;connexion&gt;&gt;&#xa;authController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="558" y="300" width="184" height="80" as="geometry" />
+        </mxCell>
+        <!-- Inscription -->
+        <mxCell id="comp-inscription" value="&lt;&lt;inscription&gt;&gt;&#xa;authController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="558" y="410" width="184" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             COMPOSANT PROFIL
+        ══════════════════════════════════════════ -->
+        <mxCell id="comp-profil" value="Profil&#xa;doctorController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="360" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             INTERFACE ADMIN
+        ══════════════════════════════════════════ -->
+        <mxCell id="iface-admin" value="&quot;Interface&quot;&#xa;&lt;b&gt;Interface Admin&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;align=center;" vertex="1" parent="1">
+          <mxGeometry x="540" y="620" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             COMPOSANT RDV
+        ══════════════════════════════════════════ -->
+        <mxCell id="comp-rdv" value="&lt;&lt;Rendez-vous&gt;&gt;&#xa;appointmentController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="160" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             COMPOSANT MESSAGERIE
+        ══════════════════════════════════════════ -->
+        <mxCell id="comp-msg" value="&lt;&lt;Messagerie&gt;&gt;&#xa;messageController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="530" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             COMPOSANT LABORATOIRE
+        ══════════════════════════════════════════ -->
+        <mxCell id="comp-lab" value="&lt;&lt;Laboratoire&gt;&gt;&#xa;labController.js&#xa;labResultController.js" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="870" y="700" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             INTERFACE DOSSIER MÉDICAL
+        ══════════════════════════════════════════ -->
+        <mxCell id="iface-dossier" value="&quot;Interface&quot;&#xa;&lt;b&gt;Dossier Médical&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="340" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             INTERFACE RÉSULTATS LABO
+        ══════════════════════════════════════════ -->
+        <mxCell id="iface-lab" value="&quot;Interface&quot;&#xa;&lt;b&gt;Résultats Laboratoire&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="700" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             PRISMA ORM
+        ══════════════════════════════════════════ -->
+        <mxCell id="comp-prisma" value="&lt;&lt;ORM&gt;&gt;&#xa;Prisma Client&#xa;schema.prisma" style="shape=mxgraph.uml.component;fontSize=12;strokeColor=#000000;fillColor=#ffffff;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="540" y="780" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════
+             FLÈCHES
+        ══════════════════════════════════════════ -->
+
+        <!-- Navigateur → Accueil -->
+        <mxCell id="e1" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="navigateur" target="accueil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Navigateur → SGBD -->
+        <mxCell id="e2" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="navigateur" target="sgbd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Accueil → bloc-auth -->
+        <mxCell id="e3" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="accueil" target="bloc-auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- bloc-auth → comp-profil -->
+        <mxCell id="e4" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bloc-auth" target="comp-profil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- bloc-auth → comp-rdv -->
+        <mxCell id="e5" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bloc-auth" target="comp-rdv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- bloc-auth → comp-msg -->
+        <mxCell id="e6" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bloc-auth" target="comp-msg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- bloc-auth → comp-lab -->
+        <mxCell id="e7" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bloc-auth" target="comp-lab">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="780" y="520" />
+              <mxPoint x="820" y="520" />
+              <mxPoint x="820" y="745" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SGBD → iface-admin -->
+        <mxCell id="e8" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="sgbd" target="iface-admin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SGBD → comp-prisma -->
+        <mxCell id="e9" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="sgbd" target="comp-prisma">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- comp-profil → iface-dossier -->
+        <mxCell id="e10" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="comp-profil" target="iface-dossier">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- comp-lab → iface-lab -->
+        <mxCell id="e11" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="comp-lab" target="iface-lab">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- comp-rdv → iface-dossier -->
+        <mxCell id="e12" value="" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="comp-rdv" target="iface-dossier">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
