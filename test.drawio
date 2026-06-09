@@ -1,0 +1,377 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="CDU Global FREYA">
+    <mxGraphModel dx="1800" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- RECTANGLE SYSTEME -->
+        <mxCell id="systeme" value="Système FREYA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=16;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="200" y="50" width="1400" height="1200" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ACTEURS ==================== -->
+
+        <!-- Patient -->
+        <mxCell id="patient" value="Patient" style="shape=mxgraph.uml.actor;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="150" width="60" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Médecin -->
+        <mxCell id="medecin" value="Médecin" style="shape=mxgraph.uml.actor;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="550" width="60" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Laboratoire -->
+        <mxCell id="labo" value="Laboratoire" style="shape=mxgraph.uml.actor;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#000000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="850" width="60" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Administrateur -->
+        <mxCell id="admin" value="Administrateur" style="shape=mxgraph.uml.actor;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1700" y="550" width="60" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CAS COMMUNS ==================== -->
+
+        <!-- Accéder au site -->
+        <mxCell id="acceder-site" value="Accéder au site" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="80" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- S'inscrire -->
+        <mxCell id="inscrire" value="S'inscrire" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="160" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Se connecter -->
+        <mxCell id="connecter" value="Se connecter" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Se déconnecter (un seul ovale partagé) -->
+        <mxCell id="deconnecter" value="Se déconnecter" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="260" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Recevoir notifications (un seul ovale partagé) -->
+        <mxCell id="notifs" value="Recevoir des&#xa;notifications" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="80" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Envoyer un message (un seul ovale partagé) -->
+        <mxCell id="message" value="Envoyer un message" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="480" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CAS PATIENT ==================== -->
+
+        <!-- Accéder compte patient -->
+        <mxCell id="compte-patient" value="Accéder au&#xa;compte patient" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="580" y="220" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Prendre un RDV -->
+        <mxCell id="rdv" value="Prendre un RDV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="160" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Modifier/Annuler RDV -->
+        <mxCell id="modifier-rdv" value="Modifier / Annuler&#xa;un RDV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="160" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Rechercher médecin -->
+        <mxCell id="rechercher" value="Rechercher médecin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="250" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter profil médecin -->
+        <mxCell id="profil-med" value="Consulter profil&#xa;médecin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="250" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter dossier -->
+        <mxCell id="dossier-patient" value="Consulter dossier&#xa;médical" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="340" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Voir médecins favoris -->
+        <mxCell id="favoris" value="Voir médecins&#xa;favoris" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="420" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CAS MÉDECIN ==================== -->
+
+        <!-- Accéder compte médecin -->
+        <mxCell id="compte-medecin" value="Accéder au&#xa;compte médecin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="580" y="550" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Confirmer/Annuler RDV -->
+        <mxCell id="confirmer-rdv" value="Confirmer / Annuler&#xa;RDV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="560" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter agenda -->
+        <mxCell id="agenda" value="Consulter agenda&#xa;de disponibilités" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="560" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Gérer son profil -->
+        <mxCell id="profil-medecin" value="Gérer son profil" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="640" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter dossier patient médecin -->
+        <mxCell id="dossier-med" value="Consulter dossier&#xa;patient" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="580" y="700" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Ajouter ordonnance -->
+        <mxCell id="ordonnance" value="Ajouter ordonnance" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="730" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CAS LABORATOIRE ==================== -->
+
+        <!-- Accéder compte labo -->
+        <mxCell id="compte-labo" value="Accéder au&#xa;compte laboratoire" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="580" y="870" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Téléverser résultats -->
+        <mxCell id="televerser" value="Téléverser les&#xa;résultats d'analyses" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="870" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Rechercher patient -->
+        <mxCell id="rechercher-patient" value="Rechercher un patient" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="850" y="950" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CAS ADMIN ==================== -->
+
+        <!-- Accéder compte admin -->
+        <mxCell id="compte-admin" value="Accéder au&#xa;compte admin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="480" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Valider/Suspendre compte -->
+        <mxCell id="valider" value="Valider / Suspendre&#xa;un compte pro" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="560" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Gérer signalements -->
+        <mxCell id="signalements" value="Gérer signalements" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="640" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter tableau de bord -->
+        <mxCell id="tableau-bord" value="Consulter tableau&#xa;de bord" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="720" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Modifier profil admin -->
+        <mxCell id="profil-admin" value="Modifier son profil" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="800" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LIENS ACTEURS → CAS ==================== -->
+
+        <!-- Patient → Accéder au site -->
+        <mxCell id="e1" edge="1" source="patient" target="acceder-site" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Patient → S'inscrire -->
+        <mxCell id="e2" edge="1" source="patient" target="inscrire" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Patient → Compte patient -->
+        <mxCell id="e3" edge="1" source="patient" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Patient → Notifications -->
+        <mxCell id="e4" edge="1" source="patient" target="notifs" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Médecin → Accéder au site -->
+        <mxCell id="e5" edge="1" source="medecin" target="acceder-site" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Médecin → Compte médecin -->
+        <mxCell id="e6" edge="1" source="medecin" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Médecin → Notifications -->
+        <mxCell id="e7" edge="1" source="medecin" target="notifs" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Labo → Compte labo -->
+        <mxCell id="e8" edge="1" source="labo" target="compte-labo" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Admin → Compte admin -->
+        <mxCell id="e9" edge="1" source="admin" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== EXTENDS / INCLUDES ==================== -->
+
+        <!-- S'inscrire extends Accéder au site -->
+        <mxCell id="ex1" edge="1" source="inscrire" target="acceder-site" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Se connecter extends Accéder au site -->
+        <mxCell id="ex2" edge="1" source="connecter" target="acceder-site" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Compte patient extends Se connecter -->
+        <mxCell id="ex3" edge="1" source="compte-patient" target="connecter" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deconnecter extends Compte patient -->
+        <mxCell id="ex4" edge="1" source="deconnecter" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deconnecter extends Compte médecin -->
+        <mxCell id="ex5" edge="1" source="deconnecter" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deconnecter extends Compte admin -->
+        <mxCell id="ex6" edge="1" source="deconnecter" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- RDV extends Compte patient -->
+        <mxCell id="ex7" edge="1" source="rdv" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Modifier RDV includes RDV -->
+        <mxCell id="ex8" edge="1" source="rdv" target="modifier-rdv" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="includes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Rechercher extends Compte patient -->
+        <mxCell id="ex9" edge="1" source="rechercher" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Consulter profil extends Rechercher -->
+        <mxCell id="ex10" edge="1" source="rechercher" target="profil-med" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Dossier patient extends Compte patient -->
+        <mxCell id="ex11" edge="1" source="dossier-patient" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Favoris extends Compte patient -->
+        <mxCell id="ex12" edge="1" source="favoris" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Message extends Compte patient -->
+        <mxCell id="ex13" edge="1" source="message" target="compte-patient" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Message extends Compte médecin -->
+        <mxCell id="ex14" edge="1" source="message" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Compte médecin extends Se connecter -->
+        <mxCell id="ex15" edge="1" source="compte-medecin" target="connecter" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Confirmer RDV extends Compte médecin -->
+        <mxCell id="ex16" edge="1" source="confirmer-rdv" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Agenda includes Confirmer RDV -->
+        <mxCell id="ex17" edge="1" source="confirmer-rdv" target="agenda" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="includes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Profil médecin extends Compte médecin -->
+        <mxCell id="ex18" edge="1" source="profil-medecin" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Dossier med extends Compte médecin -->
+        <mxCell id="ex19" edge="1" source="dossier-med" target="compte-medecin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Ordonnance extends Dossier med -->
+        <mxCell id="ex20" edge="1" source="dossier-med" target="ordonnance" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Compte labo extends Se connecter -->
+        <mxCell id="ex21" edge="1" source="compte-labo" target="connecter" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Téléverser extends Compte labo -->
+        <mxCell id="ex22" edge="1" source="televerser" target="compte-labo" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Rechercher patient extends Compte labo -->
+        <mxCell id="ex23" edge="1" source="rechercher-patient" target="compte-labo" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Compte admin extends Se connecter -->
+        <mxCell id="ex24" edge="1" source="compte-admin" target="connecter" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Valider extends Compte admin -->
+        <mxCell id="ex25" edge="1" source="valider" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Signalements extends Compte admin -->
+        <mxCell id="ex26" edge="1" source="signalements" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Tableau bord extends Compte admin -->
+        <mxCell id="ex27" edge="1" source="tableau-bord" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Profil admin extends Compte admin -->
+        <mxCell id="ex28" edge="1" source="profil-admin" target="compte-admin" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deconnecter extends Compte labo -->
+        <mxCell id="ex29" edge="1" source="deconnecter" target="compte-labo" parent="1" style="endArrow=open;endFill=0;html=1;strokeColor=#000000;dashed=1;" value="extends">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
