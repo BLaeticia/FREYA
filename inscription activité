@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Activité – Inscription FREYA" id="freya-inscription-corrige">
-    <mxGraphModel dx="2835" dy="1128" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="1900" math="0" shadow="0">
+    <mxGraphModel dx="2620" dy="1002" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="1900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -53,7 +53,7 @@
           <mxGeometry height="50" width="250" x="280" y="1480" as="geometry" />
         </mxCell>
         <mxCell id="s5_doc" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#CC0000,#000000);fontSize=17;fontColor=light-dark(#000000,#000000);" value="&amp;nbsp;Notifier l&#39;administrateur&lt;br&gt;(inscription en attente)" vertex="1">
-          <mxGeometry height="50" width="280" x="800" y="1370" as="geometry" />
+          <mxGeometry height="50" width="280" x="800" y="1350" as="geometry" />
         </mxCell>
         <mxCell id="s6_doc" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#CC0000,#000000);fontSize=17;fontColor=light-dark(#000000,#000000);" value="&amp;nbsp;Rediriger vers login" vertex="1">
           <mxGeometry height="50" width="230" x="380" y="1600" as="geometry" />
@@ -186,14 +186,14 @@
         <mxCell id="IX09lXDhFzp1TZ1qVFY6-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);fontStyle=1;fontSize=18;" value="OUI" vertex="1">
           <mxGeometry height="30" width="60" x="630" y="1200" as="geometry" />
         </mxCell>
-        <mxCell id="IX09lXDhFzp1TZ1qVFY6-9" edge="1" parent="1" source="IX09lXDhFzp1TZ1qVFY6-11" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeColor=light-dark(#CC0000,#000000);fontSize=17;strokeWidth=1.5;" value="">
+        <mxCell id="IX09lXDhFzp1TZ1qVFY6-9" edge="1" parent="1" source="IX09lXDhFzp1TZ1qVFY6-11" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeColor=light-dark(#CC0000,#000000);fontSize=17;strokeWidth=1.5;entryX=0.004;entryY=0.388;entryDx=0;entryDy=0;entryPerimeter=0;" target="s5_doc" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="410" y="1290" as="sourcePoint" />
             <mxPoint x="800" y="1385" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="IX09lXDhFzp1TZ1qVFY6-11" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=light-dark(#CC0000,#000000);fontSize=17;fontColor=light-dark(#000000,#000000);" value="Role Médecin?" vertex="1">
-          <mxGeometry height="90" width="150" x="330" y="1340" as="geometry" />
+          <mxGeometry height="90" width="150" x="330" y="1320" as="geometry" />
         </mxCell>
         <mxCell id="end_inner" parent="1" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
           <mxGeometry height="29" width="29" x="470" y="1851" as="geometry" />
@@ -232,7 +232,7 @@
           <mxGeometry height="30" width="60" x="570" y="1360" as="geometry" />
         </mxCell>
         <mxCell id="IX09lXDhFzp1TZ1qVFY6-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);fontStyle=1;fontSize=18;" value="NON&lt;br&gt;(Patient)" vertex="1">
-          <mxGeometry height="30" width="60" x="375" y="1440" as="geometry" />
+          <mxGeometry height="30" width="60" x="400" y="1420" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
